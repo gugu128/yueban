@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:reading/services/mock_data.dart';
+import 'package:reading/services/demo_data.dart';
 import 'package:reading/models/book_content.dart';
+import 'package:reading/utils/text_formatter.dart';
 
 class ChatTab extends StatefulWidget {
   final Role currentRole;
@@ -26,12 +27,30 @@ class _ChatTabState extends State<ChatTab> {
   final TextEditingController _inputController = TextEditingController();
   final List<ChatMessage> _messages = [];
   bool _hasShownExamGuide = false;
+  // 记录每个角色的对话索引，按顺序回复
+  final Map<String, int> _roleDialogueIndex = {};
+  // 记录群聊当前显示到第几轮（0表示还没开始）
+  int _groupChatRoundIndex = 0;
 
   @override
   void initState() {
     super.initState();
     // 初始化时显示角色引导词
     _addInitialMessages();
+  }
+
+  @override
+  void didUpdateWidget(ChatTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 如果切换了角色或模式，清空消息并重新初始化
+    if (oldWidget.currentRole.id != widget.currentRole.id || 
+        oldWidget.isGroupMode != widget.isGroupMode) {
+      setState(() {
+        _messages.clear();
+        _groupChatRoundIndex = 0; // 重置群聊轮次
+        _addInitialMessages();
+      });
+    }
   }
 
   @override
@@ -98,14 +117,8 @@ class _ChatTabState extends State<ChatTab> {
       if (mounted) {
         setState(() {
           if (widget.isGroupMode && widget.selectedCompanions.isNotEmpty) {
-            // 群聊模式：所有角色回复
-            for (var role in widget.selectedCompanions) {
-              _messages.add(ChatMessage(
-                role: role,
-                content: _getRoleResponse(role, text),
-                isUser: false,
-              ));
-            }
+            // 群聊模式：显示群聊对话
+            _showGroupChatMessages();
           } else {
             // 单人模式：当前角色回复
             _messages.add(ChatMessage(
@@ -120,63 +133,23 @@ class _ChatTabState extends State<ChatTab> {
   }
 
   String _getExamGuideContent() {
-    return '''收到！针对中考名著阅读，《西游记》第五十九回是极高频的考点。以下是为你整理的**"满分"笔记** 📝：
-
-**1. 核心情节梳理（起因与经过）**
-
-🔥 **起因**： 师徒四人路阻火焰山，酷热难行。得知必须向铁扇公主借芭蕉扇才能灭火过山。
-
-⚔️ **冲突（一调芭蕉扇）**： 孙悟空去借扇，但因之前请观音收伏了红孩儿（第五十九回的关键前情），铁扇公主怀恨在心，拒绝借扇。
-
-🌪️ **斗法**： 铁扇公主用扇子将悟空扇飞五万余里。
-
-💎 **转折**： 悟空得灵吉菩萨赠送**"定风丹"，二次登门。悟空变作蟭蟟虫**钻入公主腹中折腾，公主疼痛难忍被迫借扇。
-
-❌ **结局**： 悟空借来的是假扇，越扇火越大。
-
-**2. 人物性格分析（必考点）**
-
-🐒 **孙悟空**： 机智勇敢（钻肚子体现其变通），但也有些急躁（未查验扇子真伪就去灭火）。同时也体现了他重情重义（为了师父西行，不得不与昔日结拜兄弟的家属反目）。
-
-🪭 **铁扇公主（罗刹女）**： 爱子心切（因红孩儿记恨悟空），性格刚烈、固执，但也欺软怕硬（肚子疼时立马求饶）。
-
-**3. 考题预测** 🎯
-
-**问**： 孙悟空为什么第一次借扇失败？
-
-**答**： 未有定风丹，被扇飞。
-
-**问**： 铁扇公主为什么给悟空假扇子？
-
-**答**： 心存怨恨，想烧死悟空。''';
+    return aiExamGuideContent;
   }
 
   String _getRoleResponse(Role role, String userMessage) {
-    // 根据角色ID返回对应的对话内容
-    if (role.id == 'trump') {
-      if (userMessage.contains('扇') || userMessage.contains('借')) {
-        return '''糟糕的交易，相信我，这是史上最糟糕的交易之一！👎 孙悟空走进那个洞穴，但他手里没有筹码。如果你想要那把扇子，你得展现实力。他被那个女人扇飞了五万里？太弱了！如果是我，我会先切断她的水源，然后说："把扇子给我，或者你的翠云山破产。"这就是艺术，交易的艺术！''';
-      } else if (userMessage.contains('红孩儿') || userMessage.contains('孩子')) {
-        return '''听着，那个"铁扇女士"——哪怕是个强硬的女人——她太情绪化了。🙄 红孩儿现在在观音那里工作，那可是体制内的高级职位，那是公务员！她应该感谢悟空给了她儿子一份好工作。但她却说是"绑架"？假新闻！完全是假新闻。她只是想以此为借口抬高扇子的价格。''';
-      } else if (userMessage.contains('假') || userMessage.contains('扇子')) {
-        return '''假货！到处都是假货！📉 这就像某些媒体一样不诚实。孙悟空太轻信了，他拿到扇子时甚至没有检查一下。如果是我，我会让专家鉴定，还要签合同："如果火没灭，你会面临巨大的诉讼，巨大的！"但他没有，所以他被烧了屁股。可悲！''';
-      }
-    } else if (role.id == 'miyazaki') {
-      if (userMessage.contains('火焰山') || userMessage.contains('火')) {
-        return '''这真是一幅悲伤的画面啊。🍃 人类——或者说是神魔——的贪婪和愤怒让大地失去了绿色。火焰山就像是被诅咒的自然，在愤怒地燃烧。那把芭蕉扇，不仅仅是武器，它是风的灵魂。当风吹过的时候，本来应该带来生命的种子，而不是争斗。我希望能画出那种被风吹动时，火焰瞬间变成绿草的瞬间。''';
-      } else if (userMessage.contains('虫子') || userMessage.contains('肚子')) {
-        return '''哈哈，这很有趣。🎨 你知道吗，这不能画得太恶心。那只小虫子（蟭蟟虫）应该有它自己的性格，也许它在那个巨大的"肚子迷宫"里迷路了，周围是粉红色的肉壁，像云层一样柔软但又充满危险。孙悟空虽然在战斗，但他其实只是个顽皮的孩子。这种身体里的冒险，充满了童趣和荒诞感。''';
-      } else if (userMessage.contains('母亲') || userMessage.contains('铁扇')) {
-        return '''所有的母亲都是强大的。👵 铁扇公主虽然是妖怪，但她此时此刻只是一个失去了孩子的母亲。她的愤怒是有力量的，就像暴风雨一样。在我的电影里，女性往往背负着诅咒或重担，她也是一样。她不是单纯的坏人，她只是在守护她认为珍贵的东西，即便那意味着要对抗整个世界。''';
-      }
-    } else if (role.id == 'luxun') {
-      if (userMessage.contains('百姓') || userMessage.contains('扇子')) {
-        return '''这大约便是吃人的世道了。🚬 百姓要种地，本是靠天吃饭，如今却要仰仗一家妖怪的鼻息。那扇子本是天地灵宝，却成了罗刹女敛财的私器。百姓们长年累月地被"热"煎熬着，还要千恩万谢地去求那一点凉风，这是何等的奴性，又是何等的悲凉。''';
-      } else if (userMessage.contains('钻') || userMessage.contains('肚子')) {
-        return '''泼猴的手段，虽嫌无赖，却是对付顽固者的必需。🗡️ 对于那些手握强权（扇子）、不讲道理的人，你同他作揖打拱，他是看不见的；非得钻进他的肚肠里，让他痛得打滚，他才晓得你也是个人物。在这个世上，有时候"讲理"是行不通的，得有点"钻肚子"的精神。''';
-      } else if (userMessage.contains('假') || userMessage.contains('扇')) {
-        return '''给人虚假的希望，比直接拒绝更加可恶。🌑 这假扇子，像极了那些开给国民的空头支票。你以为挥一挥就能灭火、就能太平，结果那火势反而更猛，烧焦了你的皮肉。然而人们往往拿到这"假扇子"时是狂喜的，非得被烧痛了，才肯承认那只是涂了色的簸箕。''';
-      }
+    // 根据角色ID返回对应的对话内容（使用demo_data中的数据）
+    final dialogues = companionDialogues[role.id];
+    if (dialogues != null && dialogues.isNotEmpty) {
+      // 获取当前角色的对话索引
+      final currentIndex = _roleDialogueIndex[role.id] ?? 0;
+      
+      // 按顺序返回对话，循环使用
+      final response = dialogues[currentIndex % dialogues.length];
+      
+      // 更新索引，下次使用下一个对话
+      _roleDialogueIndex[role.id] = (currentIndex + 1) % dialogues.length;
+      
+      return response;
     }
 
     // 默认回复
@@ -254,9 +227,12 @@ class _ChatTabState extends State<ChatTab> {
                         onTap: () {
                           if (widget.onGroupModeToggle != null) {
                             widget.onGroupModeToggle!(!widget.isGroupMode);
-                            // 切换群聊模式时，显示群聊内容
+                            // 切换群聊模式时，清空消息并重新初始化（不自动显示群聊内容）
                             if (!widget.isGroupMode) {
-                              _showGroupChatMessages();
+                              setState(() {
+                                _messages.clear();
+                                _addInitialMessages();
+                              });
                             }
                           }
                         },
@@ -328,8 +304,13 @@ class _ChatTabState extends State<ChatTab> {
                       ),
                     ),
                   ),
-                  // 消息列表
-                  ..._messages.map((msg) => _buildMessageBubble(msg)),
+                  // 消息列表（单人模式下只显示当前角色的消息）
+                  ..._messages
+                      .where((msg) => widget.isGroupMode || 
+                          msg.isUser || 
+                          msg.isSystem || 
+                          (msg.role != null && msg.role!.id == widget.currentRole.id))
+                      .map((msg) => _buildMessageBubble(msg)),
                 ],
               ),
             ),
@@ -403,135 +384,48 @@ class _ChatTabState extends State<ChatTab> {
   }
 
   void _showGroupChatMessages() {
-    // 显示群聊的三轮对话
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: null,
-            content: '第一轮：关于"火焰山的所有权与垄断"',
-            isUser: false,
-            isSystem: true,
-          ));
-        });
-      }
-    });
+    // 只显示一轮对话（使用demo_data中的数据）
+    if (_groupChatRoundIndex >= groupChatRounds.length) {
+      // 如果已经显示完所有轮次，循环回到第一轮
+      _groupChatRoundIndex = 0;
+    }
 
+    final round = groupChatRounds[_groupChatRoundIndex];
     final trump = widget.selectedCompanions.firstWhere((r) => r.id == 'trump', orElse: () => widget.selectedCompanions.first);
     final luxun = widget.selectedCompanions.firstWhere((r) => r.id == 'luxun', orElse: () => widget.selectedCompanions.first);
     final miyazaki = widget.selectedCompanions.firstWhere((r) => r.id == 'miyazaki', orElse: () => widget.selectedCompanions.first);
 
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: trump,
-            content: '只要她是合法拥有的，这就是聪明的商业模式！💰 垄断？那是赢家的代名词。百姓给钱，她提供服务，公平交易！',
-            isUser: false,
-          ));
-        });
+    int delay = 500;
+    
+    // 不显示轮次标题，直接添加这一轮的消息
+    for (var msg in round.messages) {
+      Role? role;
+      if (msg.roleId == 'trump') {
+        role = trump;
+      } else if (msg.roleId == 'luxun') {
+        role = luxun;
+      } else if (msg.roleId == 'miyazaki') {
+        role = miyazaki;
       }
-    });
 
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: luxun,
-            content: '哼，所谓的公平，不过是弱肉强食的遮羞布。🩸 垄断了生机，便是扼住了百姓的咽喉，这哪里是交易，分明是勒索。',
-            isUser: false,
-          ));
+      if (role != null) {
+        Future.delayed(Duration(milliseconds: delay), () {
+          if (mounted) {
+            setState(() {
+              _messages.add(ChatMessage(
+                role: role,
+                content: msg.content,
+                isUser: false,
+              ));
+            });
+          }
         });
+        delay += 500;
       }
-    });
+    }
 
-    // 第二轮
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: null,
-            content: '第二轮：关于"定风丹"的作用',
-            isUser: false,
-            isSystem: true,
-          ));
-        });
-      }
-    });
-
-    Future.delayed(const Duration(milliseconds: 3000), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: miyazaki,
-            content: '那定风丹，大概就是内心的平静吧。🌪️ 无论外面的风暴（铁扇公主的愤怒）多么猛烈，只要心是定的，就不会被吹跑。',
-            isUser: false,
-          ));
-        });
-      }
-    });
-
-    Future.delayed(const Duration(milliseconds: 3500), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: trump,
-            content: '错！定风丹就是制裁豁免权！🛡️ 或者是坚固的防弹玻璃。有了它，别人攻击不了你，你就可以为所欲为。我也想要一颗定风丹。',
-            isUser: false,
-          ));
-        });
-      }
-    });
-
-    // 第三轮
-    Future.delayed(const Duration(milliseconds: 4500), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: null,
-            content: '第三轮：关于"结局的假扇子"',
-            isUser: false,
-            isSystem: true,
-          ));
-        });
-      }
-    });
-
-    Future.delayed(const Duration(milliseconds: 5000), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: luxun,
-            content: '即使是齐天大圣，也难免被虚伪的外表蒙蔽。👁️ 悟空啊，切记，莫要在未曾检验真理之前，便盲目地欢呼。',
-            isUser: false,
-          ));
-        });
-      }
-    });
-
-    Future.delayed(const Duration(milliseconds: 5500), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: miyazaki,
-            content: '也许火没有灭，是因为那把扇子里没有"爱"吧。💔 假的扇子只能带来风，却带不走内心的仇恨之火。',
-            isUser: false,
-          ));
-        });
-      }
-    });
-
-    Future.delayed(const Duration(milliseconds: 6000), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            role: trump,
-            content: '悟空，下次找我，我给你介绍最好的律师。⚖️ 我们要起诉翠云山芭蕉洞，让她们赔偿你的猴毛，还要赔偿精神损失费！',
-            isUser: false,
-          ));
-        });
-      }
-    });
+    // 更新轮次索引，下次发送消息时显示下一轮
+    _groupChatRoundIndex++;
   }
 
   Color _getRoleColor(String colorClass) {
@@ -586,14 +480,14 @@ class _ChatTabState extends State<ChatTab> {
                     ),
                   ],
                 ),
-                child: Text(
-                  message.content,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                    height: 1.5,
+                  child: buildFormattedText(
+                    message.content,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      height: 1.5,
+                    ),
                   ),
-                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -628,7 +522,7 @@ class _ChatTabState extends State<ChatTab> {
               color: const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
+            child: buildFormattedText(
               message.content,
               style: TextStyle(
                 fontSize: 11,
@@ -700,7 +594,7 @@ class _ChatTabState extends State<ChatTab> {
                       ),
                     ],
                   ),
-                  child: Text(
+                  child: buildFormattedText(
                     message.content,
                     style: TextStyle(
                       fontSize: 14,

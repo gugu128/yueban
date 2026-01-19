@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:reading/models/book_content.dart';
+import 'package:reading/services/demo_data.dart';
+import 'package:reading/utils/text_formatter.dart';
 
 class LabTab extends StatefulWidget {
   const LabTab({super.key});
@@ -197,30 +199,12 @@ class _LabTabState extends State<LabTab> {
                     padding: const EdgeInsets.only(left: 32),
                     child: Column(
                       children: [
-                        _buildCotStep(
-                          step: 1,
-                          title: 'Step 1 分析 (Analyze)',
-                          content: '场景情绪：😰 焦虑（面对考试）、😡 愤怒（手机被收）、🌫️ 无助（想摆烂）。\n\n核心矛盾：外部压力（数学难） vs 内部资源匮乏（失去调节渠道）。你把父母投射成了"铁扇公主"，把手机当成了"芭蕉扇"。',
+                        ...cotAdviceData.steps.map((step) => _buildCotStep(
+                          step: step.step,
+                          title: step.title,
+                          content: step.content,
                           isExpanded: true,
-                        ),
-                        _buildCotStep(
-                          step: 2,
-                          title: 'Step 2 映射 (Map)',
-                          content: '原著映射：硬抢（吵架）= 被扇飞（冷战）。你需要**"定风丹"（情绪稳定）和"非暴力沟通"**（智取）。\n\n理论引用：📖 Marshall Rosenberg《非暴力沟通》：观察 -> 感受 -> 需要 -> 请求。',
-                          isExpanded: true,
-                        ),
-                        _buildCotStep(
-                          step: 3,
-                          title: 'Step 3 迁移 (Transfer)',
-                          content: '定风丹 = 自我平复：冷战是假扇子扇出的火，只会内耗。\n\n借真扇 = 协商使用权：吵架无效，需要策略性沟通。\n\n火焰山 = 数学题：手机不能灭火，解题技巧才是降温的关键。',
-                          isExpanded: true,
-                        ),
-                        _buildCotStep(
-                          step: 4,
-                          title: 'Step 4 生成 (Generate)',
-                          content: '👋 嘿，同学，看来你正处在"火焰山"最热的时候！试试这套《孙行者破局法》：\n\n获得"定风丹"（停止内耗）💊\n调整"借扇"话术（非暴力沟通）🗣️\n翻越"火焰山"（拆解任务）⛰️',
-                          isExpanded: true,
-                        ),
+                        )),
                         _buildResultCard(),
                       ],
                     ),
@@ -286,7 +270,7 @@ class _LabTabState extends State<LabTab> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                buildFormattedText(
                   content,
                   style: TextStyle(
                     fontSize: 11,
@@ -344,7 +328,7 @@ class _LabTabState extends State<LabTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    '💡 AI 咨询师正在思考...',
+                    'AI 咨询师正在思考...',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -362,54 +346,9 @@ class _LabTabState extends State<LabTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '获得"定风丹"（停止内耗）💊',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF065F46),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          '现在的冷战状态正在消耗你复习的能量。先深呼吸，承认自己现在的愤怒和无助，不要责怪自己想"摆烂"，这是正常的防御机制。',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF065F46),
-                            height: 1.6,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          '调整"借扇"话术（非暴力沟通）🗣️',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF065F46),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          '去跟父母破冰，不要说"你们凭什么收我手机"，试试这样说：\n\n观察： "爸妈，你们收走手机后，我们吵了一架，现在两天没说话了。"\n\n感受： "我现在感觉压力很大，也很焦虑，因为数学真的很难。"\n\n需要： "我需要一点放松的空间，也需要你们的信任和支持，而不是单纯的管制。"\n\n请求： "能不能把手机还给我，但我承诺每天只看30分钟，剩下的时间全力攻克数学？如果我做不到，你们再收走。"',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF065F46),
-                            height: 1.6,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          '翻越"火焰山"（拆解任务）⛰️',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF065F46),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          '不要盯着整座山看。把数学复习拆解成极小的关卡（比如只复习一个公式）。每完成一个，就奖励自己一点"凉风"。',
-                          style: TextStyle(
+                        buildFormattedText(
+                          cotAdviceData.finalAdvice,
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF065F46),
                             height: 1.6,
@@ -423,18 +362,18 @@ class _LabTabState extends State<LabTab> {
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: const Color(0xFF10B981)),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.flag,
                                 size: 16,
                                 color: Color(0xFF10B981),
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  '🏁 行动指令：哪怕不复习，先去喝杯水，给父母写张小纸条试试？',
-                                  style: TextStyle(
+                                  '行动指令：${cotAdviceData.actionCommand}',
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF065F46),

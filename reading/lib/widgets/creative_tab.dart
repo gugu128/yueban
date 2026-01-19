@@ -1,9 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:reading/services/mock_data.dart';
-import 'package:reading/models/book_content.dart';
+import 'package:reading/services/demo_data.dart';
+import 'package:reading/utils/text_formatter.dart';
 
-class CreativeTab extends StatelessWidget {
+class CreativeTab extends StatefulWidget {
   const CreativeTab({super.key});
+
+  @override
+  State<CreativeTab> createState() => _CreativeTabState();
+}
+
+class _CreativeTabState extends State<CreativeTab> {
+  final TextEditingController _customInputController = TextEditingController();
+  bool _showCustomInput = false;
+  FanficBranch? _customBranch;
+
+  @override
+  void dispose() {
+    _customInputController.dispose();
+    super.dispose();
+  }
+
+  void _generateCustomBranch() {
+    final text = _customInputController.text.trim();
+    if (text.isEmpty) return;
+
+    // 模拟AI生成自定义分支
+    setState(() {
+      _customBranch = FanficBranch(
+        tag: '自定义分支',
+        color: 'purple',
+        title: text,
+        content: '基于你的想法"$text"，AI正在生成一个全新的故事分支...\n\n（这里会显示AI生成的自定义分支内容，包括情节发展和结局分析）',
+        analysis: '这是一个由你创意启发的全新分支，展现了故事的另一种可能性。',
+      );
+      _showCustomInput = false;
+      _customInputController.clear();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,41 +88,124 @@ class CreativeTab extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            // 分支卡片
-            ...branchCards.map((card) => Padding(
+            // 分支卡片（使用demo_data中的数据）
+            ...fanficBranches.map((branch) => Padding(
                   padding: const EdgeInsets.only(bottom: 16),
-                  child: _BranchCard(branch: card),
+                  child: _BranchCard(branch: branch),
                 )),
-            // 自定义分支按钮
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.grey[300]!,
-                  width: 2,
-                  style: BorderStyle.solid,
-                ),
-                borderRadius: BorderRadius.circular(12),
+            // 自定义生成的分支
+            if (_customBranch != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _BranchCard(branch: _customBranch!),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.edit_outlined,
-                    size: 14,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '自定义分支走向',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[400],
+            // 自定义分支输入区域
+            if (_showCustomInput) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF6366F1)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '输入你的创意想法',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111827),
+                      ),
                     ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _customInputController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: '例如：如果悟空先去找牛魔王...',
+                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6366F1)),
+                        ),
+                      ),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _showCustomInput = false;
+                              _customInputController.clear();
+                            });
+                          },
+                          child: const Text('取消'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _generateCustomBranch,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6366F1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                          ),
+                          child: const Text('生成分支'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            // 自定义分支按钮
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _showCustomInput = !_showCustomInput;
+                });
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.grey[300]!,
+                    width: 2,
+                    style: BorderStyle.solid,
                   ),
-                ],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _showCustomInput ? Icons.close : Icons.edit_outlined,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _showCustomInput ? '取消输入' : '自定义分支走向',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -100,7 +216,7 @@ class CreativeTab extends StatelessWidget {
 }
 
 class _BranchCard extends StatefulWidget {
-  final BranchCard branch;
+  final FanficBranch branch;
 
   const _BranchCard({required this.branch});
 
@@ -193,8 +309,10 @@ class _BranchCardState extends State<_BranchCard> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              widget.branch.desc,
+            buildFormattedText(
+              _isExpanded 
+                  ? '${widget.branch.content}\n\n【结局分析】：${widget.branch.analysis}'
+                  : widget.branch.content,
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[700],

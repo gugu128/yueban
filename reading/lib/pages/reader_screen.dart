@@ -1062,8 +1062,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
             children: [
               // 播放图标
               Container(
-                width: 32,
-                height: 32,
+                width: 24,
+                height: 24,
                 decoration: const BoxDecoration(
                   color: Color(0xFF10B981),
                   shape: BoxShape.circle,
@@ -1071,20 +1071,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 child: const Icon(
                   Icons.play_arrow,
                   color: Colors.white,
-                  size: 18,
+                  size: 14,
                 ),
               ),
-              const SizedBox(width: 12),
-              // 播放文本
-              const Expanded(
-                child: Text(
-                  '正在播放: 深山古寺河声',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 8),
+              // 只显示"正在听书"提示，字体小一点
+              const Text(
+                '正在听书',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
                 ),
               ),
             ],

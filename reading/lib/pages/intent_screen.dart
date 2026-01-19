@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:reading/services/mock_data.dart';
+import 'package:reading/services/demo_data.dart';
 import 'package:reading/models/book_content.dart';
+import 'package:reading/utils/text_formatter.dart';
+
+class ChatMessage {
+  final String content;
+  final bool isUser;
+
+  ChatMessage({
+    required this.content,
+    this.isUser = false,
+  });
+}
 
 class IntentScreen extends StatefulWidget {
   final Function(String) onConfirm;
@@ -14,14 +26,8 @@ class IntentScreen extends StatefulWidget {
 class _IntentScreenState extends State<IntentScreen> {
   String? selectedIntent;
   final TextEditingController _textController = TextEditingController();
-  bool showWelcomeMessage = false;
-
-  // AI欢迎语内容
-  final String welcomeMessage = '''好的，收到！📚
-
-针对中考名著备考，这一回（第五十九回）绝对是重难点区域。我已经为你开启了**"考点雷达"模式**，会在接下来的阅读中重点标注核心情节冲突和人物性格分析。
-
-准备好了吗？那让我们开始阅读吧！🚀''';
+  final List<ChatMessage> _chatMessages = [];
+  bool _hasReceivedReply = false;
 
   @override
   void dispose() {
@@ -29,18 +35,39 @@ class _IntentScreenState extends State<IntentScreen> {
     super.dispose();
   }
 
-  void _checkInput() {
-    final text = _textController.text.trim().toLowerCase();
+  void _sendMessage() {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
+
+    // 添加用户消息
+    setState(() {
+      _chatMessages.add(ChatMessage(
+        content: text,
+        isUser: true,
+      ));
+    });
+
+    _textController.clear();
+
+    // 检查是否是备考请求
     if (text.contains('备考') || text.contains('学习') || text.contains('考试')) {
       setState(() {
-        showWelcomeMessage = true;
         selectedIntent = 'exam'; // 自动选择备考意图
       });
-    } else {
-      setState(() {
-        showWelcomeMessage = false;
-      });
     }
+
+    // AI回复
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _chatMessages.add(ChatMessage(
+            content: aiWelcomeMessage,
+            isUser: false,
+          ));
+          _hasReceivedReply = true;
+        });
+      }
+    });
   }
 
   @override
@@ -69,26 +96,113 @@ class _IntentScreenState extends State<IntentScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          // 意图选项
-          Expanded(
-            child: ListView.separated(
-              itemCount: readingIntents.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final intent = readingIntents[index];
-                final isSelected = selectedIntent == intent.id;
-                return _IntentCard(
-                  intent: intent,
-                  isSelected: isSelected,
-                  onTap: () {
-                    setState(() {
-                      selectedIntent = intent.id;
-                    });
+          // 聊天区域
+          if (_chatMessages.isNotEmpty) ...[
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListView.builder(
+                  itemCount: _chatMessages.length,
+                  itemBuilder: (context, index) {
+                    final message = _chatMessages[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        mainAxisAlignment: message.isUser
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (!message.isUser) ...[
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6366F1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '🤖',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: message.isUser
+                                    ? const Color(0xFF4F46E5)
+                                    : const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: buildFormattedText(
+                                message.content,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: message.isUser
+                                      ? Colors.white
+                                      : const Color(0xFF1F2937),
+                                  height: 1.6,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (message.isUser) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4F46E5),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.person,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
                   },
-                );
-              },
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+          ] else ...[
+            // 意图选项（只在没有聊天消息时显示）
+            Expanded(
+              child: ListView.separated(
+                itemCount: readingIntents.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 16),
+                itemBuilder: (context, index) {
+                  final intent = readingIntents[index];
+                  final isSelected = selectedIntent == intent.id;
+                  return _IntentCard(
+                    intent: intent,
+                    isSelected: isSelected,
+                    onTap: () {
+                      setState(() {
+                        selectedIntent = intent.id;
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
           // AI 对话式输入
           Container(
             padding: const EdgeInsets.all(12),
@@ -105,68 +219,45 @@ class _IntentScreenState extends State<IntentScreen> {
                   child: TextField(
                     controller: _textController,
                     decoration: InputDecoration(
-                      hintText: '或者直接告诉我，如"为了解决和同事吵架"',
+                      hintText: _chatMessages.isEmpty
+                          ? '或者直接告诉我，如"我想学习这个情节备考"'
+                          : '继续对话...',
                       hintStyle: TextStyle(fontSize: 12, color: Colors.grey[500]),
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
                     ),
                     style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
-                    onChanged: (_) => _checkInput(),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _sendMessage,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4F46E5),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.send,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          // AI欢迎语
-          if (showWelcomeMessage) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEEF2FF),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF6366F1)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        '🤖',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      welcomeMessage,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF1F2937),
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           const SizedBox(height: 16),
-          // 开始按钮
+          // 开始按钮（在收到AI回复后或选择了意图后可用）
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: selectedIntent != null
-                  ? () => widget.onConfirm(selectedIntent!)
+              onPressed: (_hasReceivedReply || selectedIntent != null)
+                  ? () => widget.onConfirm(selectedIntent ?? 'fun')
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4F46E5),
@@ -175,7 +266,7 @@ class _IntentScreenState extends State<IntentScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: selectedIntent != null ? 8 : 0,
+                elevation: (_hasReceivedReply || selectedIntent != null) ? 8 : 0,
               ),
               child: const Text(
                 '开始深度阅读',
