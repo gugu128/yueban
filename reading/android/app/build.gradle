@@ -1,0 +1,85 @@
+ plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+android {
+    namespace "com.example.reading"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    defaultConfig {
+        applicationId "com.example.reading"
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {}
+
+// 将 APK 复制到 Flutter 期望的位置
+android.applicationVariants.all { variant ->
+    if (variant.name == "debug") {
+        variant.outputs.all { output ->
+            def assembleTask = variant.assembleProvider.get()
+            assembleTask.doLast {
+                def apkFile = output.outputFile
+                if (apkFile != null && apkFile.exists()) {
+                    def flutterApkDir = file("${project.rootDir.parentFile}/build/app/outputs/flutter-apk")
+                    flutterApkDir.mkdirs()
+                    copy {
+                        from apkFile
+                        into flutterApkDir
+                        rename { fileName -> "app-debug.apk" }
+                    }
+                    println "✓ APK copied to: ${flutterApkDir}/app-debug.apk"
+                }
+            }
+        }
+    }
+}
+

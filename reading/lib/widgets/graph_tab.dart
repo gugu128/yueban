@@ -1,0 +1,474 @@
+import 'package:flutter/material.dart';
+import 'package:reading/services/mock_data.dart';
+import 'package:reading/models/book_content.dart';
+
+class GraphTab extends StatefulWidget {
+  const GraphTab({super.key});
+
+  @override
+  State<GraphTab> createState() => _GraphTabState();
+}
+
+class _GraphTabState extends State<GraphTab> {
+  GraphNode? selectedNode;
+  GraphRelation? selectedRelation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF0F172A), // slate-900
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            children: [
+              // 连线
+              CustomPaint(
+                size: constraints.biggest,
+                painter: GraphLinesPainter(
+                  relations: graphRelations,
+                  nodes: graphNodes,
+                  constraints: constraints,
+                  selectedRelation: selectedRelation,
+                ),
+              ),
+              // 节点
+              ...graphNodes.map((node) => _buildNode(node, constraints)),
+              // 标题
+              Positioned(
+                top: 16,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.account_tree, size: 12, color: Colors.white),
+                      const SizedBox(width: 6),
+                      const Text(
+                        '实体关系网',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // 交互提示
+              Positioned(
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Text(
+                    '点击节点查看详情 · 拖拽节点查看人物生平 · 双指缩放全览',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                ),
+              ),
+              // 节点详情弹窗
+              if (selectedNode != null) 
+                _buildNodeDetailDialog(constraints),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNode(GraphNode node, BoxConstraints constraints) {
+    final isSelected = selectedNode?.id == node.id;
+    
+    // 计算文字宽度，动态调整节点大小
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: node.label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    
+    // 节点最小直径50，最大90，根据文字长度动态调整
+    final minDiameter = 50.0;
+    final maxDiameter = 90.0;
+    final textWidth = textPainter.width;
+    final padding = 12.0;
+    final nodeDiameter = (textWidth + padding * 2).clamp(minDiameter, maxDiameter);
+    final nodeRadius = nodeDiameter / 2;
+    
+    final nodeX = (node.x / 100) * constraints.maxWidth - nodeRadius;
+    final nodeY = (node.y / 100) * constraints.maxHeight - nodeRadius;
+
+    return Positioned(
+      left: nodeX,
+      top: nodeY,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedNode = node;
+            selectedRelation = null;
+          });
+        },
+        onLongPress: () {
+          // 长按可以查看详情
+          setState(() {
+            selectedNode = node;
+          });
+        },
+        child: Container(
+          width: nodeDiameter,
+          height: nodeDiameter,
+          decoration: BoxDecoration(
+            color: _parseColor(node.color).withOpacity(0.85),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isSelected
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.5),
+              width: isSelected ? 2 : 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _parseColor(node.color).withOpacity(0.4),
+                blurRadius: isSelected ? 16 : 10,
+                spreadRadius: isSelected ? 3 : 1.5,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                node.label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  height: 1.2,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNodeDetailDialog(BoxConstraints constraints) {
+    if (selectedNode == null) return const SizedBox.shrink();
+
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedNode = null;
+          });
+        },
+        child: Container(
+          color: Colors.black.withOpacity(0.5),
+          child: Center(
+            child: GestureDetector(
+              onTap: () {}, // 阻止点击穿透
+              child: Container(
+                margin: const EdgeInsets.all(24),
+                constraints: BoxConstraints(
+                  maxWidth: 400,
+                  maxHeight: constraints.maxHeight * 0.7,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _parseColor(selectedNode!.color).withOpacity(0.3),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _parseColor(selectedNode!.color).withOpacity(0.3),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 头部
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _parseColor(selectedNode!.color).withOpacity(0.2),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(14),
+                          topRight: Radius.circular(14),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          if (selectedNode!.avatar != null)
+                            Text(
+                              selectedNode!.avatar!,
+                              style: const TextStyle(fontSize: 32),
+                            ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  selectedNode!.label,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (selectedNode!.description != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      selectedNode!.description!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[300],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                selectedNode = null;
+                              });
+                            },
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // 相关事件
+                    if (selectedNode!.relatedEvents != null &&
+                        selectedNode!.relatedEvents!.isNotEmpty)
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '相关情节',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ...selectedNode!.relatedEvents!.map((event) {
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.1),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        margin: const EdgeInsets.only(
+                                          top: 6,
+                                          right: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _parseColor(selectedNode!.color),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          event,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[300],
+                                            height: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _parseColor(String hex) {
+    return Color(int.parse(hex.replaceFirst('#', '0xFF')));
+  }
+}
+
+class GraphLinesPainter extends CustomPainter {
+  final List<GraphRelation> relations;
+  final List<GraphNode> nodes;
+  final BoxConstraints constraints;
+  final GraphRelation? selectedRelation;
+
+  GraphLinesPainter({
+    required this.relations,
+    required this.nodes,
+    required this.constraints,
+    this.selectedRelation,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 绘制关系连线
+    for (var relation in relations) {
+      final fromNode = nodes.firstWhere((n) => n.id == relation.fromId);
+      final toNode = nodes.firstWhere((n) => n.id == relation.toId);
+
+      final fromX = (fromNode.x / 100) * constraints.maxWidth;
+      final fromY = (fromNode.y / 100) * constraints.maxHeight;
+      final toX = (toNode.x / 100) * constraints.maxWidth;
+      final toY = (toNode.y / 100) * constraints.maxHeight;
+
+      final isSelected = selectedRelation?.fromId == relation.fromId &&
+          selectedRelation?.toId == relation.toId;
+
+      // 根据关系类型选择颜色
+      Color lineColor;
+      switch (relation.relationType) {
+        case 'family':
+          lineColor = const Color(0xFFEC4899); // 粉色
+          break;
+        case 'friend':
+          lineColor = const Color(0xFF10B981); // 绿色
+          break;
+        case 'enemy':
+          lineColor = const Color(0xFFEF4444); // 红色
+          break;
+        case 'master':
+          lineColor = const Color(0xFF6366F1); // 蓝色
+          break;
+        case 'possess':
+          lineColor = const Color(0xFFF59E0B); // 橙色
+          break;
+        case 'location':
+          lineColor = const Color(0xFF8B5CF6); // 紫色
+          break;
+        default:
+          lineColor = Colors.white.withOpacity(0.4);
+      }
+
+      final paint = Paint()
+        ..color = isSelected
+            ? lineColor
+            : lineColor.withOpacity(0.5)
+        ..strokeWidth = isSelected ? 2.5 : 1.5
+        ..style = PaintingStyle.stroke;
+
+      // 绘制连线
+      canvas.drawLine(
+        Offset(fromX, fromY),
+        Offset(toX, toY),
+        paint,
+      );
+
+      // 在连线中点绘制关系标签，偏移避免与节点重叠
+      final dx = toX - fromX;
+      final dy = toY - fromY;
+      final distance = (dx * dx + dy * dy) * 0.5; // 距离的平方根
+      
+      // 根据距离动态调整偏移，确保不遮挡节点
+      final minOffset = 30.0;
+      final maxOffset = 45.0;
+      final offsetDistance = (distance * 0.15).clamp(minOffset, maxOffset);
+      
+      // 计算垂直偏移方向（垂直于连线）
+      final perpX = -dy / distance;
+      final perpY = dx / distance;
+      
+      final midX = (fromX + toX) / 2 + perpX * offsetDistance;
+      final midY = (fromY + toY) / 2 + perpY * offsetDistance;
+
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: relation.label,
+          style: TextStyle(
+            fontSize: 9,
+            color: isSelected ? Colors.white : Colors.grey[200],
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+
+      // 绘制标签背景，紧凑但清晰
+      final labelRect = RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(midX, midY),
+          width: textPainter.width + 10,
+          height: textPainter.height + 4,
+        ),
+        const Radius.circular(4),
+      );
+      canvas.drawRRect(
+        labelRect,
+        Paint()
+          ..color = isSelected
+              ? lineColor.withOpacity(0.95)
+              : Colors.black.withOpacity(0.75),
+      );
+
+      textPainter.paint(
+        canvas,
+        Offset(midX - textPainter.width / 2, midY - textPainter.height / 2),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant GraphLinesPainter oldDelegate) =>
+      oldDelegate.selectedRelation != selectedRelation;
+}
+
