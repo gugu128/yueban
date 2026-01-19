@@ -115,6 +115,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
               if (showExplanationIndex != null) _buildExplanationPanel(),
               // 设置面板
               if (showSettings) _buildSettingsPanel(),
+              // 底部播放条（听书时显示）
+              if (isListening && !showDashboard) _buildAudioPlayerBar(),
               // 底部触发器
               if (!showDashboard) _buildFloatingButton(),
               // AI 工作台
@@ -173,46 +175,48 @@ class _ReaderScreenState extends State<ReaderScreen> {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-          const Expanded(
-            child: Center(
-              child: Text(
-                '第五十九回 唐三藏路阻火焰山 孙行者一调芭蕉扇',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'serif',
-                  color: Color(0xFF78716C),
+          if (!isListening)
+            const Expanded(
+              child: Center(
+                child: Text(
+                  '第五十九回 唐三藏路阻火焰山 孙行者一调芭蕉扇',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'serif',
+                    color: Color(0xFF78716C),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ),
+            )
+          else
+            const Spacer(),
           Row(
             children: [
               IconButton(
                 onPressed: () {
+                  final wasListening = isListening;
                   setState(() {
                     isListening = !isListening;
                     isPlaying = isListening;
                   });
                   // 显示听书提示
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && isListening) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Row(
-                            children: [
-                              Icon(Icons.headphones, color: Colors.white, size: 20),
-                              SizedBox(width: 12),
-                              Text('正在听书...', style: TextStyle(color: Colors.white)),
-                            ],
-                          ),
-                          duration: Duration(seconds: 2),
-                          backgroundColor: Color(0xFF4F46E5),
+                  if (!wasListening && isListening) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(Icons.headphones, color: Colors.white, size: 20),
+                            SizedBox(width: 12),
+                            Text('正在听书...', style: TextStyle(color: Colors.white)),
+                          ],
                         ),
-                      );
-                    }
-                  });
+                        duration: Duration(seconds: 2),
+                        backgroundColor: Color(0xFF4F46E5),
+                      ),
+                    );
+                  }
                 },
                 icon: Icon(
                   isListening ? Icons.headphones : Icons.headphones_outlined,
@@ -1035,67 +1039,69 @@ class _ReaderScreenState extends State<ReaderScreen> {
     );
   }
 
+  Widget _buildAudioPlayerBar() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF374151),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // 播放图标
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF10B981),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.play_arrow,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // 播放文本
+              const Expanded(
+                child: Text(
+                  '正在播放: 深山古寺河声',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFloatingButton() {
     return Positioned(
-      bottom: 32,
+      bottom: isListening ? 72 : 32, // 如果正在听书，浮动按钮上移
       right: 24,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (isPlaying)
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 2,
-                        height: 8,
-                        margin: const EdgeInsets.only(right: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.green[400],
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                      Container(
-                        width: 2,
-                        height: 12,
-                        margin: const EdgeInsets.only(right: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.green[400],
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                      Container(
-                        width: 2,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.green[400],
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    '正在播放：深山古寺·雨声',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           GestureDetector(
             onTap: () {
               setState(() {
