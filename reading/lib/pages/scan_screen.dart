@@ -6,6 +6,7 @@ class ScanScreen extends StatefulWidget {
   final bool showDocChooser;
   final VoidCallback? onChooseA;
   final VoidCallback? onChooseB;
+  final VoidCallback? onChooseC;
 
   const ScanScreen({
     super.key,
@@ -13,6 +14,7 @@ class ScanScreen extends StatefulWidget {
     this.showDocChooser = false,
     this.onChooseA,
     this.onChooseB,
+    this.onChooseC,
   });
 
   @override
@@ -164,7 +166,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               ],
             ),
           ),
-          // 右下角 A/B 按钮（仅上传文档流程显示）
+          // 右下角 A/B/C 按钮（仅上传文档流程显示）
           if (widget.showDocChooser)
             Positioned(
               right: 20,
@@ -182,6 +184,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     label: 'B',
                     onTap: widget.onChooseB,
                     tooltip: '打开 Jane Eyre Selected Chapters.pdf',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildChoiceButton(
+                    label: 'C',
+                    onTap: widget.onChooseC,
+                    tooltip: '打开 cartoon.png',
                   ),
                 ],
               ),

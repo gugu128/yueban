@@ -42,8 +42,8 @@ class _CreativeTabState extends State<CreativeTab> {
 
   @override
   Widget build(BuildContext context) {
-    // 如果是论文模式，显示不支持此功能
-    if (widget.bookId == 'paper') {
+    // 如果是论文模式或cartoon模式，显示不支持此功能
+    if (widget.bookId == 'paper' || widget.bookId == 'cartoon') {
       return Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -66,7 +66,7 @@ class _CreativeTabState extends State<CreativeTab> {
               ),
               const SizedBox(height: 16),
               Text(
-                '本文不支持此功能',
+                '不适用',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey[700],

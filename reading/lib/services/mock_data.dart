@@ -914,11 +914,11 @@ final List<ReadingIntent> readingIntents = [
   ),
 ];
 
-// 最近阅读的书籍
+// 最近上传的文件
 final List<RecentBook> recentBooks = [
-  RecentBook(title: '非暴力沟通', colorClass: 'emerald', progress: 35),
-  RecentBook(title: '人类简史', colorClass: 'orange', progress: 82),
-  RecentBook(title: '三体III', colorClass: 'slate', progress: 12, dark: true),
+  RecentBook(title: '西游记', colorClass: 'emerald', progress: 0),
+  RecentBook(title: '简爱', colorClass: 'orange', progress: 0),
+  RecentBook(title: '非暴力沟通', colorClass: 'slate', progress: 0, dark: true),
 ];
 
 // 批注数据 - 对应高亮文本的评论

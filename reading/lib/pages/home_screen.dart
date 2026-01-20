@@ -262,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              '最近阅读',
+              '最近上传文件',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -565,7 +565,7 @@ class _BookCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             book.title,
@@ -574,36 +574,6 @@ class _BookCard extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : const Color(0xFF111827),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '已读 ${book.progress}%',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDark ? Colors.grey[300] : Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                height: 4,
-                decoration: BoxDecoration(
-                  color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: book.progress / 100,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white : Colors.black,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),

@@ -95,6 +95,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           widget.pdfAssetPath!.contains('Jane Eyre'));
 
   bool get _isPaper => widget.bookId == 'paper';
+  bool get _isCartoon => widget.bookId == 'cartoon';
 
   String _getTopBarTitle() {
     if (_isJaneEyre) {
@@ -105,8 +106,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
       }
       return 'Jane Eyre';
     }
-    if (_isPaper) {
-      // 论文模式不显示标题
+    if (_isPaper || _isCartoon) {
+      // 论文模式和cartoon模式不显示标题
       return '';
     }
     // 西游记默认标题
@@ -443,9 +444,14 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   // 横向翻页内容
   Widget _buildPagedContent() {
-    // 1）上传文档 A/B：包括“简·爱选段”的 PDF
+    // 0）Cartoon模式：显示图片
+    if (_isCartoon) {
+      return _buildCartoonContent();
+    }
+    
+    // 1）上传文档 A/B：包括"简·爱选段"的 PDF
     if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
-      // B 选项：简·爱 PDF → 开启“扫描成文本”后，直接进入支持高亮/批注的文本阅读模式
+      // B 选项：简·爱 PDF → 开启"扫描成文本"后，直接进入支持高亮/批注的文本阅读模式
       if (_isJaneEyre && _pdfAsText) {
         return _buildTextBookPagedContent();
       }
@@ -453,7 +459,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
       final currentPdf = _currentPdfAssetPath();
       if (currentPdf != null) {
         if (_pdfAsText) {
-          // 通用上传论文的“扫描成文本”模式
+          // 通用上传论文的"扫描成文本"模式
           return _buildPdfTextContent();
         }
         if (_activePdfAsset != currentPdf) {
@@ -546,6 +552,37 @@ class _ReaderScreenState extends State<ReaderScreen> {
             _pdfTotalPages = total;
           });
         },
+      ),
+    );
+  }
+
+  Widget _buildCartoonContent() {
+    return Container(
+      color: const Color(0xFFFDFBF7),
+      child: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 3.0,
+          child: Image.asset(
+            'assets/images/cartoon.png',
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text(
+                      '图片加载失败',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

@@ -48,7 +48,11 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    activeTab = widget.injectedTab;
+    // 检查初始tab是否可用
+    final isCartoon = widget.bookId == 'cartoon';
+    final disabledTabs = isCartoon ? ['graph', 'lab', 'create'] : [];
+    final initialTab = widget.injectedTab;
+    activeTab = disabledTabs.contains(initialTab) ? 'chat' : initialTab;
     pendingQuote = widget.injectedQuote;
     lastQuoteVersion = widget.quoteVersion;
     _controller = AnimationController(
@@ -72,10 +76,22 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
   @override
   void didUpdateWidget(AIDashboard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 只有当父组件“明确注入的 tab”发生变化时，才强制切换；
+    // 检查bookId变化，如果变成cartoon且当前tab被禁用，切换到第一个可用tab
+    if (widget.bookId != oldWidget.bookId) {
+      final isCartoon = widget.bookId == 'cartoon';
+      final disabledTabs = isCartoon ? ['graph', 'lab', 'create'] : [];
+      if (disabledTabs.contains(activeTab)) {
+        activeTab = 'chat';
+      }
+    }
+    // 只有当父组件"明确注入的 tab"发生变化时，才强制切换；
     // 避免键盘弹出等导致父组件 rebuild 时把用户手动切到的 tab 又切回去。
     if (widget.injectedTab != oldWidget.injectedTab && widget.injectedTab != activeTab) {
-      activeTab = widget.injectedTab;
+      final isCartoon = widget.bookId == 'cartoon';
+      final disabledTabs = isCartoon ? ['graph', 'lab', 'create'] : [];
+      if (!disabledTabs.contains(widget.injectedTab)) {
+        activeTab = widget.injectedTab;
+      }
     }
     if (widget.quoteVersion != lastQuoteVersion) {
       lastQuoteVersion = widget.quoteVersion;
@@ -158,6 +174,10 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
         {'id': 'lab', 'label': '实验室', 'icon': Icons.work_outline},
         {'id': 'create', 'label': '番外', 'icon': Icons.call_split},
       ];
+      
+      // 对于cartoon模式，某些tab不适用
+      final isCartoon = widget.bookId == 'cartoon';
+      final disabledTabs = isCartoon ? ['graph', 'lab', 'create'] : [];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -166,48 +186,53 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
       ),
       child: Row(
         children: tabs.map((tab) {
-          final isActive = activeTab == tab['id'];
+          final tabId = tab['id'] as String;
+          final isDisabled = disabledTabs.contains(tabId);
+          final isActive = activeTab == tabId;
           return Expanded(
             child: GestureDetector(
-              onTap: () {
+              onTap: isDisabled ? null : () {
                 setState(() {
-                  activeTab = tab['id'] as String;
+                  activeTab = tabId;
                 });
               },
-              child: Container(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      tab['icon'] as IconData,
-                      size: 20,
-                      color: isActive
-                          ? const Color(0xFF4F46E5)
-                          : Colors.grey[400],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      tab['label'] as String,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+              child: Opacity(
+                opacity: isDisabled ? 0.4 : 1.0,
+                child: Container(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        tab['icon'] as IconData,
+                        size: 20,
                         color: isActive
                             ? const Color(0xFF4F46E5)
-                            : Colors.grey[400],
+                            : (isDisabled ? Colors.grey[300] : Colors.grey[400]),
                       ),
-                    ),
-                    if (isActive)
-                      Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        width: 32,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4F46E5),
-                          borderRadius: BorderRadius.circular(1),
+                      const SizedBox(height: 4),
+                      Text(
+                        tab['label'] as String,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                          color: isActive
+                              ? const Color(0xFF4F46E5)
+                              : (isDisabled ? Colors.grey[300] : Colors.grey[400]),
                         ),
                       ),
-                  ],
+                      if (isActive)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          width: 32,
+                          height: 2,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4F46E5),
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -226,6 +251,7 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
           isGroupMode: widget.isGroupMode,
           onRoleChanged: widget.onRoleChanged,
           onGroupModeToggle: widget.onGroupModeToggle,
+          bookId: widget.bookId,
         );
       case 'graph':
         return GraphTab(bookId: widget.bookId);
@@ -329,6 +355,19 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
         return;
       }
     }
+    
+    // Cartoon模式：检查是否是关于漫画深意的问题
+    if (widget.bookId == 'cartoon') {
+      final cartoonReply = _getCartoonReply(text);
+      if (cartoonReply != null) {
+        setState(() {
+          _messages.add(_SimpleMessage(sender: '我', content: text, quote: quote, isUser: true));
+          _messages.add(cartoonReply);
+        });
+        _inputController.clear();
+        return;
+      }
+    }
 
     setState(() {
       _messages.add(_SimpleMessage(sender: '我', content: text, quote: quote, isUser: true));
@@ -340,6 +379,25 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
       ));
     });
     _inputController.clear();
+  }
+  
+  // Cartoon模式：获取AI陪读关于漫画深意的回答
+  _SimpleMessage? _getCartoonReply(String userInput) {
+    String normalize(String s) => s.replaceAll('"', '').replaceAll('"', '').replaceAll('：', ':').trim().toLowerCase();
+    final normalized = normalize(userInput);
+    
+    // 检查是否包含漫画相关关键词
+    final keywords = ['漫画', '深意', '意思', '含义', '意义', '讽刺', '什么'];
+    final matchedCount = keywords.where((k) => normalized.contains(k)).length;
+    
+    if (matchedCount >= 2 || normalized.contains('漫画') && (normalized.contains('深意') || normalized.contains('意思'))) {
+      return _SimpleMessage(
+        sender: 'AI小伴读',
+        content: '这幅漫画具有很强的讽刺意味，深刻揭示了社交媒体时代下人类情感（尤其是悲伤）的异化与表演性。\n\n以下是它的几层深意：\n\n1. 悲伤的"表演化"与"变现" (Performative Grief)\n漫画的上半部分是一个庄重的场景：一个人在悼念逝者，这是人类最私密、最痛苦的时刻之一。然而，这一切是建立在下半部分——巨大的"点赞（Like）"手势之上的。\n这暗示了现代人的一种怪象：如果不发到朋友圈获得点赞，哀悼似乎就无法完成。\n人们把葬礼、痛苦和告别变成了社交媒体上的"内容"，潜意识里希望通过展示悲伤来获取他人的关注、同情和网络流量。\n\n2. 情感的廉价化 (Trivialization of Emotion)\n"点赞"这个手势通常代表"喜欢"、"同意"或"真棒"。用这样一个积极、轻松甚至娱乐化的符号去支撑一个代表死亡和沉痛的墓碑，形成了一种强烈的荒诞感。\n它讽刺了社交网络上互动的肤浅——对他人的巨大悲剧，旁观者往往只需要动动手指点一个"赞"或"蜡烛"表情。这种廉价的互动消解了死亡的严肃性。\n\n3. 存在感的依赖 (Validation of Existence)\n这幅画的构图很有意思：地面是由"点赞"的大拇指托举起来的。这隐喻了数字时代的生存逻辑——我们的生活经历（哪怕是死亡），似乎只有被网络数据（点赞数）支撑时，才具有了"真实性"和"重量"。如果没有人点赞，这种悲伤仿佛就没有立足之地。\n\n4. 隐藏的动机\n地面之上的悲伤是显性的（看得见的），而地下的"点赞"是隐性的（深埋的）。这可能在讽刺当事人内心深处不自知的动机：表面上是在缅怀逝者，根基上却是在寻求社交满足感。',
+      );
+    }
+    
+    return null;
   }
 
   // 论文模式：获取预设问答

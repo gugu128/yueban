@@ -9,6 +9,7 @@ class ChatTab extends StatefulWidget {
   final bool isGroupMode;
   final Function(Role) onRoleChanged;
   final Function(bool)? onGroupModeToggle;
+  final String bookId; // 当前书目：xyj / jane_eyre / paper / cartoon
 
   const ChatTab({
     super.key,
@@ -17,6 +18,7 @@ class ChatTab extends StatefulWidget {
     this.isGroupMode = false,
     required this.onRoleChanged,
     this.onGroupModeToggle,
+    this.bookId = 'xyj',
   });
 
   @override
@@ -137,6 +139,14 @@ class _ChatTabState extends State<ChatTab> {
   }
 
   String _getRoleResponse(Role role, String userMessage) {
+    // Cartoon模式：检查是否是关于漫画深意的问题，且角色是宫崎骏
+    if (widget.bookId == 'cartoon' && role.id == 'miyazaki') {
+      final cartoonReply = _getCartoonReplyForMiyazaki(userMessage);
+      if (cartoonReply != null) {
+        return cartoonReply;
+      }
+    }
+    
     // 根据角色ID返回对应的对话内容（使用demo_data中的数据）
     final dialogues = companionDialogues[role.id];
     if (dialogues != null && dialogues.isNotEmpty) {
@@ -154,6 +164,22 @@ class _ChatTabState extends State<ChatTab> {
 
     // 默认回复
     return role.greeting;
+  }
+  
+  // Cartoon模式：获取宫崎骏关于漫画深意的回答
+  String? _getCartoonReplyForMiyazaki(String userInput) {
+    String normalize(String s) => s.replaceAll('"', '').replaceAll('"', '').replaceAll('：', ':').trim().toLowerCase();
+    final normalized = normalize(userInput);
+    
+    // 检查是否包含漫画相关关键词
+    final keywords = ['漫画', '深意', '意思', '含义', '意义', '讽刺', '什么'];
+    final matchedCount = keywords.where((k) => normalized.contains(k)).length;
+    
+    if (matchedCount >= 2 || normalized.contains('漫画') && (normalized.contains('深意') || normalized.contains('意思'))) {
+      return '哎呀，这真是一个被施了悲伤魔法的画面呢……就像是被某种看不见的诅咒缠绕着。\n\n请允许我用一个老婆婆（或者是森林里看守旧时光的精灵）的眼光，来为你解读这个奇怪的世界吧：\n\n1. 建立在虚幻之上的悲伤\n你看那个穿着黑衣服的人，他在低头默哀，那是人类最沉重、最私密的时刻。那棵枯树，那朵花，那是生命的凋零。可是，孩子，你看他的脚下——支撑着这片土地的，不再是厚实温暖的泥土，也不再是盘根错节的树根，而是一个巨大的、冰冷的"大拇指"。\n\n这让我想起那些被贪婪吞噬的幽灵。这幅画在告诉我们：在这个时代，如果悲伤没有被"点赞"托举起来，仿佛它就不存在一样。\n人们是不是已经忘记了如何安静地独自流泪？是不是只有当痛苦变成了别人的谈资和认可，这份痛苦才算有了"重量"？\n\n2. 吞噬真心的机器\n那个巨大的手势，就像是汤婆婆油屋里的金子，看着诱人，其实是虚空的。\n这幅画有着令人心疼的讽刺：我们在用最真实的眼泪，去喂养那个渴望关注的怪兽。\n上面是生离死别的痛，下面却是轻松随意的"真棒"。多么荒谬啊，对他人的死亡和离去，现代人只能给出一个轻飘飘的点击。这种对比，就像是把森林砍光了去建游乐场一样，让人心里空落落的。\n\n3. 迷失的自我\n你看那个人，他低着头。他是在看坟墓，还是在看那个深埋地下的"赞"呢？\n这就像是中了魔法的人类。我们把生活建立在他人的评价之上。\n我们的喜怒哀乐，如果不展示出来换取那个大拇指，好像就没有了意义。我们变得不再是为了纪念逝者而悲伤，而是为了"表演悲伤"而悲伤。\n\n结语\n孩子，你要记住，真正的心意是不需要那个按钮的。就像风吹过树梢的声音，就像泥土的芬芳，真正的悲伤和爱，应该是静悄悄的，沉在心底的，那是属于你和逝者之间神圣的契约，而不是演给世界看的一出戏。\n\n快醒醒吧，不要让那个巨大的手指，把你真正的心给偷走了。';
+    }
+    
+    return null;
   }
 
   @override

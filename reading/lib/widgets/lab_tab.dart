@@ -102,6 +102,51 @@ class _LabTabState extends State<LabTab> {
 
   @override
   Widget build(BuildContext context) {
+    // 如果是论文模式或cartoon模式，显示不支持此功能
+    if (widget.bookId == 'paper' || widget.bookId == 'cartoon') {
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFECFDF5), // emerald-50
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 48,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '不适用',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '生活实验室仅适用于小说类文本',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Stack(
       children: [
         Container(

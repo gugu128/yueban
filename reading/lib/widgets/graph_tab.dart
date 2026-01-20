@@ -20,8 +20,8 @@ class _GraphTabState extends State<GraphTab> {
 
   @override
   Widget build(BuildContext context) {
-    // 如果是论文模式，显示不支持此功能
-    if (widget.bookId == 'paper') {
+    // 如果是论文模式或cartoon模式，显示不支持此功能
+    if (widget.bookId == 'paper' || widget.bookId == 'cartoon') {
       return Container(
         color: const Color(0xFF0F172A), // slate-900
         child: Center(
@@ -35,7 +35,7 @@ class _GraphTabState extends State<GraphTab> {
               ),
               const SizedBox(height: 16),
               Text(
-                '本文不支持此功能',
+                '不适用',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey[300],

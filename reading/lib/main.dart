@@ -95,6 +95,7 @@ class _AppContainerState extends State<AppContainer> {
           onChooseB: isDocChooser
               ? () => navigateTo('intent', pdfPath: 'assets/PDF/Jane Eyre Selected Chapters.pdf')
               : null,
+          onChooseC: isDocChooser ? () => navigateTo('intent', pdfPath: '__cartoon__') : null,
         );
       case 'intent':
         return IntentScreen(
@@ -103,8 +104,12 @@ class _AppContainerState extends State<AppContainer> {
       case 'companion':
         return CompanionSelectionScreen(
           onConfirm: (companions, groupMode) {
+            // 如果是cartoon模式，跳转到cartoon_reader
+            if (pdfAssetPath == '__cartoon__') {
+              navigateTo('cartoon_reader', companions: companions, groupMode: groupMode);
+            }
             // 如果有 PDF 路径，跳转到 pdf_reader；否则跳转到 reader（西游记）
-            if (pdfAssetPath != null && pdfAssetPath != '__doc_chooser__') {
+            else if (pdfAssetPath != null && pdfAssetPath != '__doc_chooser__') {
               navigateTo('pdf_reader', companions: companions, groupMode: groupMode);
             } else {
               navigateTo('reader', companions: companions, groupMode: groupMode);
@@ -127,6 +132,15 @@ class _AppContainerState extends State<AppContainer> {
           intent: selectedIntent,
           pdfAssetPath: path,
           bookId: bookId,
+          selectedCompanions: selectedCompanions,
+          isGroupMode: isGroupMode,
+          onBack: () => navigateTo('home'),
+        );
+      case 'cartoon_reader':
+        return ReaderScreen(
+          intent: selectedIntent,
+          pdfAssetPath: '__cartoon__',
+          bookId: 'cartoon',
           selectedCompanions: selectedCompanions,
           isGroupMode: isGroupMode,
           onBack: () => navigateTo('home'),
