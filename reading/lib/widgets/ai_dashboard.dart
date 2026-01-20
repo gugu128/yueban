@@ -5,7 +5,6 @@ import 'package:reading/widgets/graph_tab.dart';
 import 'package:reading/widgets/lab_tab.dart';
 import 'package:reading/widgets/creative_tab.dart';
 import 'package:reading/services/demo_data.dart';
-import 'package:reading/services/paper_qa_data.dart';
 
 class AIDashboard extends StatefulWidget {
   final bool isVisible;
@@ -270,14 +269,23 @@ class AIReadingCompanionTab extends StatefulWidget {
 class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
   final TextEditingController _quoteController = TextEditingController();
   final TextEditingController _inputController = TextEditingController();
-  final List<_SimpleMessage> _messages = [
-    _SimpleMessage(
-      sender: 'AI小伴读',
-      content: '你好，我是 AI 陪读。引用任意原文句子并发问，我会结合引用快速解释。',
-    ),
-  ];
+  late final List<_SimpleMessage> _messages;
   int _lastQuoteVersion = 0;
   int _nextCitationIndex = 1;
+  int _paperQuestionIndex = 0; // 记录论文模式已回答的问题索引
+  
+  @override
+  void initState() {
+    super.initState();
+    _messages = [
+      _SimpleMessage(
+        sender: 'AI小伴读',
+        content: widget.bookId == 'paper' 
+            ? '你好，我是AI陪读小助手。'
+            : '你好，我是 AI 陪读。引用任意原文句子并发问，我会结合引用快速解释。',
+      ),
+    ];
+  }
 
   @override
   void dispose() {
@@ -308,16 +316,17 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     if (text.isEmpty) return;
     final quote = _quoteController.text.trim().isEmpty ? null : _quoteController.text.trim();
 
-    final reply = _aiReply(text, quote);
-    
-    // 检查是否是论文问答
-    PaperQA? matchedQA;
+    // 论文模式：检查是否是预设问题
     if (widget.bookId == 'paper') {
-      for (var qa in paperQAs) {
-        if (matchesQuestion(text, qa.question)) {
-          matchedQA = qa;
-          break;
-        }
+      final paperReply = _getPaperReply(text);
+      if (paperReply != null) {
+        setState(() {
+          _messages.add(_SimpleMessage(sender: '我', content: text, quote: quote, isUser: true));
+          _messages.add(paperReply);
+          _paperQuestionIndex++;
+        });
+        _inputController.clear();
+        return;
       }
     }
 
@@ -325,13 +334,114 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
       _messages.add(_SimpleMessage(sender: '我', content: text, quote: quote, isUser: true));
       _messages.add(_SimpleMessage(
         sender: 'AI小伴读',
-        content: reply,
+        content: _aiReply(text, quote),
         quote: quote,
         citationIndex: quote == null || quote.isEmpty ? null : _nextCitationIndex++,
-        paperQA: matchedQA,
       ));
     });
     _inputController.clear();
+  }
+
+  // 论文模式：获取预设问答
+  _SimpleMessage? _getPaperReply(String userInput) {
+    String normalize(String s) => s.replaceAll('"', '').replaceAll('"', '').replaceAll('：', ':').trim().toLowerCase();
+    final normalized = normalize(userInput);
+    
+    // 检查是否匹配三个预设问题（更宽松的匹配）
+    final questions = [
+      {
+        'keywords': ['q1', '问题1', '第一个问题', '共享单车', '短期需求预测', '随机森林', 'rf', 'gbdt', 'ols', '普通线性回归', '机器学习集成模型', '优势'],
+        'index': 0,
+      },
+      {
+        'keywords': ['q2', '问题2', '第二个问题', '特征工程', '小时级', '需求量', '最关键因素', '变量重要性', '影响因素', '识别'],
+        'index': 1,
+      },
+      {
+        'keywords': ['q3', '问题3', '第三个问题', 'lasso', 'ridge', '多重共线性', '高维数据', '表现', '优于', '为什么'],
+        'index': 2,
+      },
+    ];
+    
+    for (var q in questions) {
+      final keywords = q['keywords'] as List<String>;
+      // 检查是否包含足够的关键词（至少2个）或者明确的问题编号
+      final matchedKeywords = keywords.where((k) => normalized.contains(k)).length;
+      final isExplicitQuestion = normalized.contains('q1') || normalized.contains('q2') || normalized.contains('q3') ||
+                                 normalized.contains('问题1') || normalized.contains('问题2') || normalized.contains('问题3');
+      
+      if (matchedKeywords >= 2 || isExplicitQuestion) {
+        final index = q['index'] as int;
+        // 如果是明确的问题编号，直接匹配
+        if (isExplicitQuestion) {
+          if ((normalized.contains('q1') || normalized.contains('问题1')) && index == 0) {
+            return _getPaperAnswer(0);
+          }
+          if ((normalized.contains('q2') || normalized.contains('问题2')) && index == 1) {
+            return _getPaperAnswer(1);
+          }
+          if ((normalized.contains('q3') || normalized.contains('问题3')) && index == 2) {
+            return _getPaperAnswer(2);
+          }
+        }
+        // 否则确保按顺序回答
+        if (index == _paperQuestionIndex) {
+          return _getPaperAnswer(index);
+        }
+      }
+    }
+    
+    return null;
+  }
+  
+  // 论文模式：获取预设答案
+  _SimpleMessage _getPaperAnswer(int questionIndex) {
+    final answers = [
+      {
+        'content': '随机森林（RF）和迭代决策树（GBDT）在样本内拟合和样本外预测中均展现出更高的拟合优度（R²）和更低的标准误差（RMSE），显著优于OLS模型。其中，RF模型在样本外预测中的表现最佳。这是因为集成模型能够综合考虑协变量之间的相互作用（例如高峰时段与周末、极端天气的非线性叠加影响），捕捉到OLS模型容易忽略的复杂交互效应，从而不仅提升了预测精度，还具有更强的泛化能力。',
+        'citations': [1, 2, 3, 4],
+        'citationDetails': {
+          1: '摘要提到"相比普通线性回归……随机森林和迭代决策树模型对共享单车短期即时需求预测的结果更精确……拟合优度(R²)更高，标准误差(RMSE)更低"。',
+          2: '正文指出"RF和GBDT模型在样本外预测效果来看……在R²上提升分别达到约39和29个百分点……这两个集成模型在样本内拟合和样本外预测方面都具有较大优势"。',
+          3: '正文指出"RF比GBDT在样本外预测的效果更佳……RF模型的R²比GBDT模型高约10个百分点"。',
+          4: '结论部分解释原因："RF和GBDT模型在进行模型预测分析时能够综合考虑模型协变量之间的相互作用……这是此类机器学习模型在算法上的优势……OLS模型能够观测到高峰时段的重要影响，但该变量在叠加周末、假日时的影响会有所减弱……这是OLS模型在预测过程中无法考量的问题"。',
+        },
+        'thinking': '问题核心在于对比不同模型的性能优势。首先从摘要和模型评估部分（表3及相关文字）提取数据表现（R²和RMSE的对比），确定RF和GBDT优于OLS。其次，从结论部分找到造成这种差异的理论原因（对协变量交互作用的处理能力），从而形成完整的回答。',
+      },
+      {
+        'content': '研究发现，影响共享单车短期需求的主要因素包括特定的位置因素（如是否位于旧金山）、时间因素（尤其是早晚通勤高峰时段及工作日特征）以及天气条件（最高气温和风向）。\n\n在变量识别差异上，OLS、Lasso和Ridge模型倾向于强调特定的时间点（如上午8点、下午5点）和位置变量；而RF和GBDT模型不仅识别了位置和高峰时段，还更敏锐地捕捉到了工作日特征（如周日或周一）以及具体的天气指标（风向、最高气温）的重要性，能够识别出更广泛的综合影响因素。',
+        'citations': [1, 2, 3],
+        'citationDetails': {
+          1: '摘要和结论总结道："影响共享单车小时需求的主要因素包括特定的位置因素、时间因素以及天气条件因素"。',
+          2: '正文指出OLS、Lasso和Ridge指向了相同的五个变量，"包括上午8点、9点……和下午4点、5点……两个上下班通勤高峰期的四个时间段变量和特定空间位置（旧金山城市）变量"。',
+          3: '正文提到RF和GBDT"综合包含了位置、时间和天气特征……在位置变量上……选择了旧金山和San Jose，在时间变量上选择了高峰时段、工作日和周末变量，在天气特征上选择了风向和最高气温"。',
+        },
+        'thinking': '问题侧重于影响因素和模型间的"解释性"差异。我首先归纳了所有模型共识的核心因素（时间、地点、天气）。然后对比表4和表5的分析结果，区分传统线性模型（侧重具体时刻点）和树模型（侧重更广泛的特征组合，如加入了风向和气温的具体指标）在特征重要性排序上的不同。',
+      },
+      {
+        'content': '这是因为本研究基于经济学基本理论选取变量，所选取的变量（如时间、天气、地点）多为直接影响因素，自变量之间的多重共线性问题并不突出，且变量维度虽多但并未达到极高维度的"灾难"级别。Lasso和Ridge的主要优势在于处理协变量过多或存在严重共线性的情况，且它们缺乏处理变量间复杂非线性交互作用的能力（这正是集成模型的强项）。因此，在缺乏显著共线性且主要依赖直接因果变量的数据集中，这两类模型无法发挥其降维优势，预测效果仅与OLS相当。',
+        'citations': [1, 2],
+        'citationDetails': {
+          1: '正文明确解释："由于模型选取依据了经济学的基本理论，非直接影响的变量基本没有选取，其自变量之间的共线性问题也并不突出，因此没有体现出这类模型（Lasso和Ridge）的优势"。',
+          2: '结论部分进一步补充："Lasso和Ridge模型的优势在于处理协变量数量过多或变量之间存在多重共线的情况，对于变量之间的交互作用也缺乏处理……因而预测效果与OLS相当"。',
+        },
+        'thinking': '这是一个关于模型适用性边界的问题。Lasso/Ridge通常用于高维数据，但在此文中表现平平。通过阅读"模型评估与预测结果"章节，作者明确指出了原因：一是数据本身的特性（共线性不强，特征选择基于理论而非盲目罗列），二是模型本身的局限（无法处理交互项，这一点与RF/GBDT形成对比）。将这两点结合即可解释为何它们没有超越OLS。',
+      },
+    ];
+    
+    if (questionIndex >= answers.length) return _SimpleMessage(
+      sender: 'AI小伴读',
+      content: '所有预设问题已回答完毕。',
+    );
+    
+    final answer = answers[questionIndex];
+    return _SimpleMessage(
+      sender: 'AI小伴读',
+      content: answer['content'] as String,
+      citationIndices: answer['citations'] as List<int>,
+      citationDetails: answer['citationDetails'] as Map<int, String>,
+      thinking: answer['thinking'] as String,
+    );
   }
 
   String _aiReply(String user, String? quote) {
@@ -339,24 +449,9 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     final hasQuote = q.isNotEmpty;
     final quoteLine = hasQuote ? '引用：$q\n\n' : '';
 
-    String normalize(String s) => s.replaceAll('"', '').replaceAll('"', '').replaceAll('：', ':').trim();
+    String normalize(String s) => s.replaceAll('“', '').replaceAll('”', '').replaceAll('：', ':').trim();
     final nq = normalize(q);
     final nu = normalize(user);
-
-    // 论文模式：检查是否匹配预定义的三个问题
-    if (widget.bookId == 'paper') {
-      for (var qa in paperQAs) {
-        if (matchesQuestion(user, qa.question)) {
-          return qa.answer;
-        }
-      }
-      // 如果没有匹配，返回提示
-      return '你好！我是 AI 陪读。针对这篇论文，你可以问我以下三个问题：\n\n'
-          'Q1：在共享单车短期需求预测中，相比于普通线性回归（OLS），随机森林（RF）和迭代决策树（GBDT）等机器学习集成模型表现出了怎样的优势？\n\n'
-          'Q2：在特征工程中，该研究发现影响共享单车"小时级"需求量的最关键因素有哪些？不同模型对变量重要性的识别有何差异？\n\n'
-          'Q3：既然Lasso和Ridge回归旨在解决多重共线性和高维数据问题，为何在本研究的共享单车预测中，它们的表现并未优于普通OLS模型？\n\n'
-          '请直接发送问题编号（Q1/Q2/Q3）或问题的关键内容即可。';
-    }
 
     bool askMeaning() => nu.contains('什么意思') || nu.contains('意思') || nu.contains('怎么理解');
     bool askAppreciation() => nu.contains('赏析') || nu.contains('分析') || nu.contains('解读');
@@ -468,20 +563,16 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
   }
 
   void _showCitation(_SimpleMessage message) {
-    // 论文模式：显示"依据原文"和"思考过程"
-    if (message.paperQA != null) {
-      _showPaperCitationDialog(context: context, message: message);
-      return;
-    }
-    
-    // 原有的引用逻辑
-    if (message.citationIndex == null || message.quote == null || message.quote!.trim().isEmpty) {
+    final citationIndices = message.allCitationIndices;
+    if (citationIndices.isEmpty) {
       return;
     }
     _showAiCitationDialog(
       context: context,
       message: message,
-      title: 'AI陪读 · 精准溯源 [${message.citationIndex}]',
+      title: citationIndices.length == 1 
+          ? 'AI陪读 · 精准溯源 [${citationIndices.first}]'
+          : 'AI陪读 · 精准溯源 [${citationIndices.join('][')}]',
     );
   }
 }
@@ -630,13 +721,16 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
   }
 
   void _showCitation(_SimpleMessage message) {
-    if (message.citationIndex == null || message.quote == null || message.quote!.trim().isEmpty) {
+    final citationIndices = message.allCitationIndices;
+    if (citationIndices.isEmpty) {
       return;
     }
     _showAiCitationDialog(
       context: context,
       message: message,
-      title: '深度探讨 · 精准溯源 [${message.citationIndex}]',
+      title: citationIndices.length == 1 
+          ? '深度探讨 · 精准溯源 [${citationIndices.first}]'
+          : '深度探讨 · 精准溯源 [${citationIndices.join('][')}]',
     );
   }
 }
@@ -646,8 +740,10 @@ class _SimpleMessage {
   final String content;
   final String? quote;
   final bool isUser;
-  final int? citationIndex;
-  final PaperQA? paperQA; // 论文问答数据
+  final int? citationIndex; // 单个引用索引（向后兼容）
+  final List<int>? citationIndices; // 多个引用索引（论文模式）
+  final Map<int, String>? citationDetails; // 引用详情（论文模式）
+  final String? thinking; // 思考过程（论文模式）
 
   _SimpleMessage({
     required this.sender,
@@ -655,8 +751,21 @@ class _SimpleMessage {
     this.quote,
     this.isUser = false,
     this.citationIndex,
-    this.paperQA,
+    this.citationIndices,
+    this.citationDetails,
+    this.thinking,
   });
+  
+  // 获取所有引用索引
+  List<int> get allCitationIndices {
+    if (citationIndices != null && citationIndices!.isNotEmpty) {
+      return citationIndices!;
+    }
+    if (citationIndex != null) {
+      return [citationIndex!];
+    }
+    return [];
+  }
 }
 
 class _MessageBubble extends StatelessWidget {
@@ -723,276 +832,90 @@ class _MessageBubble extends StatelessWidget {
 
   Widget _buildContentWithCitation(BuildContext context) {
     final baseStyle = const TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF1F2937));
-    
-    // 论文模式：解析答案中的上角标引用 [1] [2] [3] 等
-    if (!message.isUser && message.paperQA != null && onCitationTap != null) {
-      return _buildPaperAnswerWithCitations(context, message, baseStyle);
-    }
-    
-    // 原有的引用逻辑
+    final citationIndices = message.allCitationIndices;
     final hasCitation = !message.isUser &&
-        message.citationIndex != null &&
-        message.quote != null &&
-        message.quote!.trim().isNotEmpty &&
+        citationIndices.isNotEmpty &&
         onCitationTap != null;
 
     if (!hasCitation) {
       return Text(message.content, style: baseStyle);
     }
 
+    // 如果有多个引用索引（论文模式），在内容末尾显示所有上角标
+    final List<InlineSpan> spans = [
+      TextSpan(text: message.content),
+    ];
+    
+    // 添加所有上角标（紧凑显示）
+    if (citationIndices.length == 1) {
+      // 单个上角标
+      spans.add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.top,
+          child: GestureDetector(
+            onTap: () => onCitationTap?.call(message),
+            child: Container(
+              margin: const EdgeInsets.only(left: 3, bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4F46E5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '[${citationIndices.first}]',
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    } else if (citationIndices.length > 1) {
+      // 多个上角标：紧凑显示在一起
+      spans.add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.top,
+          child: GestureDetector(
+            onTap: () => onCitationTap?.call(message),
+            child: Container(
+              margin: const EdgeInsets.only(left: 3, bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4F46E5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: citationIndices.map((index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 1),
+                    child: Text(
+                      '[$index]',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return RichText(
       text: TextSpan(
         style: baseStyle,
-        children: [
-          TextSpan(text: message.content),
-          WidgetSpan(
-            alignment: PlaceholderAlignment.top,
-            child: GestureDetector(
-              onTap: () => onCitationTap?.call(message),
-              child: Container(
-                margin: const EdgeInsets.only(left: 4, bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4F46E5),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '[${message.citationIndex}]',
-                  style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        children: spans,
       ),
     );
   }
-
-  Widget _buildPaperAnswerWithCitations(BuildContext context, _SimpleMessage message, TextStyle baseStyle) {
-    final text = message.content;
-    final regex = RegExp(r'\[(\d+)\]');
-    final parts = <InlineSpan>[];
-    int lastEnd = 0;
-
-    for (var match in regex.allMatches(text)) {
-      // 添加匹配前的文本
-      if (match.start > lastEnd) {
-        parts.add(TextSpan(
-          text: text.substring(lastEnd, match.start),
-          style: baseStyle,
-        ));
-      }
-
-      // 添加引用标注（右上角上标）
-      final citationIndex = int.parse(match.group(1)!);
-      final citation = message.paperQA!.citations.firstWhere(
-        (c) => c.index == citationIndex,
-        orElse: () => message.paperQA!.citations.first,
-      );
-
-      parts.add(WidgetSpan(
-        alignment: PlaceholderAlignment.top,
-        child: GestureDetector(
-          onTap: () => onCitationTap?.call(message),
-          child: Container(
-            margin: const EdgeInsets.only(left: 2, bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4F46E5),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              '[$citationIndex]',
-              style: const TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
-      ));
-
-      lastEnd = match.end;
-    }
-
-    // 添加剩余的文本
-    if (lastEnd < text.length) {
-      parts.add(TextSpan(
-        text: text.substring(lastEnd),
-        style: baseStyle,
-      ));
-    }
-
-    return RichText(text: TextSpan(children: parts));
-  }
-}
-
-void _showPaperCitationDialog({
-  required BuildContext context,
-  required _SimpleMessage message,
-}) {
-  if (message.paperQA == null) return;
-
-  showDialog(
-    context: context,
-    builder: (context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          constraints: BoxConstraints(
-            maxWidth: 600,
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'AI陪读 · 论文问答溯源',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, size: 18),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 依据原文部分
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF9FAFB),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.description, size: 16, color: Color(0xFF4F46E5)),
-                                SizedBox(width: 8),
-                                Text(
-                                  '依据原文',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF111827),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            ...message.paperQA!.citations.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final citation = entry.value;
-                              return Padding(
-                                padding: EdgeInsets.only(bottom: index < message.paperQA!.citations.length - 1 ? 12 : 0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      margin: const EdgeInsets.only(top: 2, right: 8),
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF4F46E5),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        '[${citation.index}]',
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        citation.sourceText,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          height: 1.6,
-                                          color: Color(0xFF374151),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // 思考过程部分
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEF2FF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFC7D2FE)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.lightbulb_outline, size: 16, color: Color(0xFF4338CA)),
-                                SizedBox(width: 8),
-                                Text(
-                                  '思考过程',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF4338CA),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              message.paperQA!.thinkingProcess,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                height: 1.6,
-                                color: Color(0xFF1F2937),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
 }
 
 void _showAiCitationDialog({
@@ -1000,9 +923,18 @@ void _showAiCitationDialog({
   required _SimpleMessage message,
   required String title,
 }) {
-  // 在追溯弹窗里，我们只展示“溯源原文 + AI 的思考过程”，
-  // 不再把整段答案原封不动塞进来，避免用户感觉是在重复阅读同一段内容。
+  // 论文模式：显示完整的依据原文和思考过程
+  bool _isPaperMode() {
+    return message.citationDetails != null && message.citationDetails!.isNotEmpty;
+  }
+  
   String _buildReasoning() {
+    // 论文模式：使用预设的思考过程
+    if (_isPaperMode() && message.thinking != null) {
+      return message.thinking!;
+    }
+    
+    // 原有逻辑（其他模式）
     final quote = (message.quote ?? '').trim();
     final answer = message.content.trim();
     final hasQuote = quote.isNotEmpty;
@@ -1026,6 +958,19 @@ void _showAiCitationDialog({
     }
 
     return lines.join('\n');
+  }
+  
+  List<Map<String, String>> _buildCitationDetails() {
+    if (!_isPaperMode() || message.citationDetails == null) {
+      return [];
+    }
+    
+    return message.citationDetails!.entries.map((entry) {
+      return {
+        'index': entry.key.toString(),
+        'content': entry.value,
+      };
+    }).toList();
   }
 
   showDialog(
@@ -1063,37 +1008,98 @@ void _showAiCitationDialog({
                 ],
               ),
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '溯源原文',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF4B5563),
+              // 论文模式：显示多个依据原文
+              if (_isPaperMode()) ...[
+                ..._buildCitationDetails().map((detail) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9FAFB),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF4F46E5),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '[${detail['index']}]',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                '依据原文',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF4B5563),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            detail['content'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              height: 1.6,
+                              color: Color(0xFF111827),
+                              fontFamily: 'serif',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      message.quote ?? '',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        height: 1.6,
-                        color: Color(0xFF111827),
-                        fontFamily: 'serif',
+                  );
+                }),
+              ] else ...[
+                // 原有模式：显示单个引用
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF9FAFB),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '溯源原文',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF4B5563),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        message.quote ?? '',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.6,
+                          color: Color(0xFF111827),
+                          fontFamily: 'serif',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
@@ -1106,23 +1112,23 @@ void _showAiCitationDialog({
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '推理路径（AI 如何从原文走到这条回答）',
-                          style: TextStyle(
+                        Text(
+                          _isPaperMode() ? '思考过程' : '推理路径（AI 如何从原文走到这条回答）',
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF4338CA),
                           ),
                         ),
                         const SizedBox(height: 8),
-                      Text(
-                        _buildReasoning(),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          height: 1.6,
-                          color: Color(0xFF1F2937),
+                        Text(
+                          _buildReasoning(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.6,
+                            color: Color(0xFF1F2937),
+                          ),
                         ),
-                      ),
                       ],
                     ),
                   ),
