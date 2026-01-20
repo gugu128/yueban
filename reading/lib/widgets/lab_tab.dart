@@ -346,14 +346,7 @@ class _LabTabState extends State<LabTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        buildFormattedText(
-                          cotAdviceData.finalAdvice,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF065F46),
-                            height: 1.6,
-                          ),
-                        ),
+                        _buildTextWithCitations('${cotAdviceData.finalAdvice}\n\n参考证据：[1][2]'),
                         const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.all(10),

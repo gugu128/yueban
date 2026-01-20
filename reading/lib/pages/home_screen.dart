@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:reading/services/mock_data.dart';
 import 'package:reading/models/book_content.dart';
+import 'package:reading/services/server_config.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onScan;
+  final VoidCallback onUpload;
 
-  const HomeScreen({super.key, required this.onScan});
+  const HomeScreen({super.key, required this.onScan, required this.onUpload});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -18,28 +20,47 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              _buildHeader(),
-              const SizedBox(height: 40),
-              // 上传文档区域
-              _buildUploadSection(),
-              const SizedBox(height: 40),
-              // 最近阅读
-              Expanded(
-                child: _buildRecentReads(),
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: _buildBody(),
       bottomNavigationBar: _buildBottomNavBar(),
     );
+  }
+
+  Widget _buildBody() {
+    switch (_currentIndex) {
+      case 0:
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                _buildHeader(),
+                const SizedBox(height: 40),
+                // 上传文档区域
+                _buildUploadSection(),
+                const SizedBox(height: 40),
+                // 最近阅读
+                Expanded(
+                  child: _buildRecentReads(),
+                ),
+              ],
+            ),
+          ),
+        );
+      case 1:
+        return const SafeArea(
+          child: Center(child: Text('阅读记录（待接入）')),
+        );
+      case 2:
+        return const SafeArea(
+          child: Center(child: Text('解读记录（待接入）')),
+        );
+      case 3:
+        return const MyTab();
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildHeader() {
@@ -109,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  // TODO: 实现文档上传
+                  widget.onUpload();
                 },
                 child: Container(
                   height: 120,
@@ -333,6 +354,174 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class MyTab extends StatefulWidget {
+  const MyTab({super.key});
+
+  @override
+  State<MyTab> createState() => _MyTabState();
+}
+
+class _MyTabState extends State<MyTab> {
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    await ServerConfig.instance.load();
+    if (!mounted) return;
+    setState(() {
+      _loaded = true;
+    });
+  }
+
+  Future<void> _openServerConfig() async {
+    final hostController = TextEditingController(text: ServerConfig.instance.host);
+    final portController = TextEditingController(
+      text: ServerConfig.instance.port > 0 ? ServerConfig.instance.port.toString() : '',
+    );
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('服务器配置'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: hostController,
+                decoration: const InputDecoration(
+                  labelText: '服务器 IP / 域名',
+                  hintText: '例如：192.168.1.10',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: portController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: '端口',
+                  hintText: '例如：8080',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '保存后会使用：http://IP:端口',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await ServerConfig.instance.clear();
+                if (!context.mounted) return;
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('清空'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final host = hostController.text.trim();
+                final port = int.tryParse(portController.text.trim()) ?? 0;
+                if (host.isEmpty || port <= 0 || port > 65535) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('请输入正确的服务器 IP/域名 与端口(1-65535)')),
+                  );
+                  return;
+                }
+                await ServerConfig.instance.save(host: host, port: port);
+                if (!context.mounted) return;
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        );
+      },
+    );
+
+    hostController.dispose();
+    portController.dispose();
+
+    if (result == true && mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cfg = ServerConfig.instance;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  onPressed: _loaded ? _openServerConfig : null,
+                  icon: const Icon(Icons.dns_outlined),
+                  tooltip: '服务器配置',
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  '我的',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '当前服务器',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    cfg.isConfigured ? cfg.baseUrl : '未配置',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: cfg.isConfigured ? const Color(0xFF111827) : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '提示：真机与服务器需在同一局域网；服务器建议监听 0.0.0.0。',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

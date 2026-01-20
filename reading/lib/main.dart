@@ -46,8 +46,15 @@ class _AppContainerState extends State<AppContainer> {
   String? selectedIntent;
   List<Role> selectedCompanions = [];
   bool isGroupMode = false;
+  String? pdfAssetPath;
 
-  void navigateTo(String screen, {String? intent, List<Role>? companions, bool? groupMode}) {
+  void navigateTo(
+    String screen, {
+    String? intent,
+    List<Role>? companions,
+    bool? groupMode,
+    String? pdfPath,
+  }) {
     setState(() {
       currentScreen = screen;
       if (intent != null) {
@@ -58,6 +65,9 @@ class _AppContainerState extends State<AppContainer> {
       }
       if (groupMode != null) {
         isGroupMode = groupMode;
+      }
+      if (pdfPath != null) {
+        pdfAssetPath = pdfPath;
       }
     });
   }
@@ -74,6 +84,7 @@ class _AppContainerState extends State<AppContainer> {
       case 'home':
         return HomeScreen(
           onScan: () => navigateTo('scan'),
+          onUpload: () => navigateTo('pdf_reader', pdfPath: 'assets/PDF/paper.pdf'),
         );
       case 'scan':
         return ScanScreen(
@@ -98,8 +109,18 @@ class _AppContainerState extends State<AppContainer> {
           isGroupMode: isGroupMode,
           onBack: () => navigateTo('home'),
         );
+      case 'pdf_reader':
+        return ReaderScreen(
+          pdfAssetPath: pdfAssetPath ?? 'assets/PDF/paper.pdf',
+          selectedCompanions: selectedCompanions,
+          isGroupMode: isGroupMode,
+          onBack: () => navigateTo('home'),
+        );
       default:
-        return HomeScreen(onScan: () => navigateTo('scan'));
+        return HomeScreen(
+          onScan: () => navigateTo('scan'),
+          onUpload: () => navigateTo('pdf_reader', pdfPath: 'assets/PDF/paper.pdf'),
+        );
     }
   }
 }

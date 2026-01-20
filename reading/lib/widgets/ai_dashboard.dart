@@ -41,7 +41,6 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
   late String activeTab;
   String? pendingQuote;
   int lastQuoteVersion = 0;
-  String lastInjectedTab = 'chat';
 
   @override
   void initState() {
@@ -49,7 +48,6 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
     activeTab = widget.injectedTab;
     pendingQuote = widget.injectedQuote;
     lastQuoteVersion = widget.quoteVersion;
-    lastInjectedTab = widget.injectedTab;
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -76,7 +74,6 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
     if (widget.injectedTab != oldWidget.injectedTab && widget.injectedTab != activeTab) {
       activeTab = widget.injectedTab;
     }
-    lastInjectedTab = widget.injectedTab;
     if (widget.quoteVersion != lastQuoteVersion) {
       lastQuoteVersion = widget.quoteVersion;
       pendingQuote = widget.injectedQuote;
@@ -273,6 +270,7 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     ),
   ];
   int _lastQuoteVersion = 0;
+  int _nextCitationIndex = 1;
 
   @override
   void dispose() {
@@ -309,6 +307,7 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
         sender: 'AI小伴读',
         content: _aiReply(text, quote),
         quote: quote,
+        citationIndex: quote == null || quote.isEmpty ? null : _nextCitationIndex++,
       ));
     });
     _inputController.clear();
@@ -383,7 +382,10 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: _messages.length,
-            itemBuilder: (_, i) => _MessageBubble(message: _messages[i]),
+            itemBuilder: (_, i) => _MessageBubble(
+              message: _messages[i],
+              onCitationTap: _showCitation,
+            ),
           ),
         ),
         _inputBar(
@@ -392,6 +394,17 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
           onSend: _send,
         ),
       ],
+    );
+  }
+
+  void _showCitation(_SimpleMessage message) {
+    if (message.citationIndex == null || message.quote == null || message.quote!.trim().isEmpty) {
+      return;
+    }
+    _showAiCitationDialog(
+      context: context,
+      message: message,
+      title: 'AI陪读 · 精准溯源 [${message.citationIndex}]',
     );
   }
 }
@@ -421,6 +434,7 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
   ];
   String? _activeQuote;
   int _lastQuoteVersion = 0;
+  int _nextCitationIndex = 1;
 
   @override
   void dispose() {
@@ -452,6 +466,7 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
               ? '已自动锁定你刚才选中的原文：$quote\n\n我会围绕它持续提问与分析，除非你开启新的深度探讨。'
               : '已锁定引用：$quote\n\n我会围绕它持续提问与分析，除非你开启新的深度探讨。',
           quote: quote,
+          citationIndex: _nextCitationIndex++,
         ));
     });
   }
@@ -467,6 +482,7 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
         sender: 'AI深度探讨',
         content: _deepReply(text, _activeQuote!),
         quote: _activeQuote,
+        citationIndex: _nextCitationIndex++,
       ));
     });
     _inputController.clear();
@@ -520,7 +536,10 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: _messages.length,
-            itemBuilder: (_, i) => _MessageBubble(message: _messages[i]),
+            itemBuilder: (_, i) => _MessageBubble(
+              message: _messages[i],
+              onCitationTap: _showCitation,
+            ),
           ),
         ),
         _inputBar(
@@ -532,6 +551,17 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
       ],
     );
   }
+
+  void _showCitation(_SimpleMessage message) {
+    if (message.citationIndex == null || message.quote == null || message.quote!.trim().isEmpty) {
+      return;
+    }
+    _showAiCitationDialog(
+      context: context,
+      message: message,
+      title: '深度探讨 · 精准溯源 [${message.citationIndex}]',
+    );
+  }
 }
 
 class _SimpleMessage {
@@ -539,19 +569,22 @@ class _SimpleMessage {
   final String content;
   final String? quote;
   final bool isUser;
+  final int? citationIndex;
 
   _SimpleMessage({
     required this.sender,
     required this.content,
     this.quote,
     this.isUser = false,
+    this.citationIndex,
   });
 }
 
 class _MessageBubble extends StatelessWidget {
   final _SimpleMessage message;
+  final void Function(_SimpleMessage message)? onCitationTap;
 
-  const _MessageBubble({required this.message});
+  const _MessageBubble({required this.message, this.onCitationTap});
 
   @override
   Widget build(BuildContext context) {
@@ -602,15 +635,197 @@ class _MessageBubble extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 6),
-            Text(
-              message.content,
-              style: const TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF1F2937)),
-            ),
+            _buildContentWithCitation(context),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildContentWithCitation(BuildContext context) {
+    final baseStyle = const TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF1F2937));
+    final hasCitation = !message.isUser &&
+        message.citationIndex != null &&
+        message.quote != null &&
+        message.quote!.trim().isNotEmpty &&
+        onCitationTap != null;
+
+    if (!hasCitation) {
+      return Text(message.content, style: baseStyle);
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: baseStyle,
+        children: [
+          TextSpan(text: message.content),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.top,
+            child: GestureDetector(
+              onTap: () => onCitationTap?.call(message),
+              child: Container(
+                margin: const EdgeInsets.only(left: 4, bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4F46E5),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '[${message.citationIndex}]',
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _showAiCitationDialog({
+  required BuildContext context,
+  required _SimpleMessage message,
+  required String title,
+}) {
+  // 在追溯弹窗里，我们只展示“溯源原文 + AI 的思考过程”，
+  // 不再把整段答案原封不动塞进来，避免用户感觉是在重复阅读同一段内容。
+  String _buildReasoning() {
+    final quote = (message.quote ?? '').trim();
+    final answer = message.content.trim();
+    final hasQuote = quote.isNotEmpty;
+
+    final List<String> lines = [];
+
+    if (hasQuote) {
+      lines.add('1. 先把你选中的原文当作「唯一可靠的依据」，确认回答必须围绕这段话展开。');
+      lines.add('2. 从原文里抓关键词（意象、情绪词、人物动作或修辞结构），判断它主要在写景、写人还是推进情节。');
+      lines.add('3. 再对照你的问题，在这些关键词允许的范围内组织回答，尽量避免编造原文中不存在的细节。');
+    } else {
+      lines.add('1. 当前这条记录没有检测到明显的原文引用，只能把你的提问本身当作主要信息源。');
+      lines.add('2. 我会从问题里的关键词推断你是在问「字面意思」「赏析」还是「情节作用」，再选择相应的回答结构。');
+    }
+
+    lines.add('4. 生成答案后，会再对照原文做一轮自检：如果发现推断与原文明显不符，按设计应优先以原文为准，并在后续对话中纠正。');
+
+    // 如果回答本身很短，可以作为「推理的示例结果」简单带一句，但不整段贴出。
+    if (answer.isNotEmpty && answer.length <= 80) {
+      lines.add('（本次回答的大意是：$answer）');
+    }
+
+    return lines.join('\n');
+  }
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          constraints: BoxConstraints(
+            maxWidth: 600,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, size: 18),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '溯源原文',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF4B5563),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      message.quote ?? '',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.6,
+                        color: Color(0xFF111827),
+                        fontFamily: 'serif',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '推理路径（AI 如何从原文走到这条回答）',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF4338CA),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      Text(
+                        _buildReasoning(),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.6,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 Widget _sectionHeader(String title, String subtitle) {
@@ -758,69 +973,6 @@ Widget _pill(String text) {
         fontSize: 12,
         color: Color(0xFF4338CA),
         fontWeight: FontWeight.w600,
-      ),
-    ),
-  );
-}
-
-Widget _suggestChip({required String label, required VoidCallback onTap}) {
-  return Material(
-    color: const Color(0xFFF1F5F9),
-    borderRadius: BorderRadius.circular(999),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.auto_awesome, size: 14, color: Color(0xFF4F46E5)),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF334155),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-Widget _label(String text) {
-  return Text(
-    text,
-    style: const TextStyle(
-      fontSize: 13,
-      fontWeight: FontWeight.w700,
-      color: Color(0xFF111827),
-    ),
-  );
-}
-
-Widget _bubble(String text, {bool isAnswer = false}) {
-  return Container(
-    width: double.infinity,
-    margin: const EdgeInsets.only(top: 6),
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: isAnswer ? const Color(0xFFF0F9FF) : const Color(0xFFF9FAFB),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(
-        color: isAnswer ? const Color(0xFFBFDBFE) : const Color(0xFFE5E7EB),
-      ),
-    ),
-    child: Text(
-      text,
-      style: const TextStyle(
-        fontSize: 13,
-        height: 1.6,
-        color: Color(0xFF374151),
       ),
     ),
   );

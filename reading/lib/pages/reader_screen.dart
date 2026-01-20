@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:reading/services/mock_data.dart';
 import 'package:reading/models/book_content.dart';
 import 'package:reading/widgets/ai_dashboard.dart';
@@ -8,6 +13,7 @@ class ReaderScreen extends StatefulWidget {
   final List<Role> selectedCompanions;
   final bool isGroupMode;
   final VoidCallback onBack;
+  final String? pdfAssetPath; // 资产 PDF 路径：例如 assets/PDF/paper.pdf
 
   const ReaderScreen({
     super.key,
@@ -15,6 +21,7 @@ class ReaderScreen extends StatefulWidget {
     this.selectedCompanions = const [],
     this.isGroupMode = false,
     required this.onBack,
+    this.pdfAssetPath,
   });
 
   @override
@@ -41,6 +48,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
   late bool isGroupMode;
   int? showCommentIndex; // 显示评论的文本块索引
   int? showExplanationIndex; // 显示释义的文本块索引
+  String? _pdfFilePath;
+  int? _pdfTotalPages;
+  bool _pdfReady = false;
+  bool _pdfAsText = false; // 是否将 PDF 转为文字阅读
+  bool _pdfTextLoading = false;
+  List<String> _pdfPageTexts = [];
 
   @override
   void initState() {
@@ -56,6 +69,79 @@ class _ReaderScreenState extends State<ReaderScreen> {
         });
       }
     });
+
+    // 如果是 PDF 阅读模式：提前把 asset 拷贝到临时文件（flutter_pdfview 需要 filePath）
+    if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
+      _preparePdf(widget.pdfAssetPath!.trim());
+    }
+  }
+
+  Future<void> _preparePdf(String assetPath) async {
+    try {
+      final data = await rootBundle.load(assetPath);
+      final bytes = data.buffer.asUint8List();
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/paper.pdf');
+      await file.writeAsBytes(bytes, flush: true);
+      if (!mounted) return;
+      setState(() {
+        _pdfFilePath = file.path;
+      });
+    } catch (_) {
+      // 保持静默失败：UI 会展示加载失败提示
+      if (!mounted) return;
+      setState(() {
+        _pdfFilePath = null;
+      });
+    }
+  }
+
+  Future<void> _ensurePdfText() async {
+    if (_pdfTextLoading || _pdfPageTexts.isNotEmpty) {
+      // 已经在加载或已加载过
+      setState(() {
+        _pdfAsText = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _pdfTextLoading = true;
+    });
+
+    try {
+      // 直接从 asset 读取 PDF bytes 做文本抽取，避免再次从临时文件读取失败
+      final data = await rootBundle.load(widget.pdfAssetPath!.trim());
+      final bytes = data.buffer.asUint8List();
+      final PdfDocument document = PdfDocument(inputBytes: bytes);
+
+      final List<String> pages = [];
+      final extractor = PdfTextExtractor(document);
+      for (int i = 0; i < document.pages.count; i++) {
+        final text = extractor.extractText(
+          startPageIndex: i,
+          endPageIndex: i,
+        ).trim();
+        if (text.isNotEmpty) {
+          pages.add(text);
+        }
+      }
+      document.dispose();
+
+      if (!mounted) return;
+      setState(() {
+        _pdfPageTexts = pages.isEmpty ? ['（未能从 PDF 中提取到可阅读文本）'] : pages;
+        _pdfAsText = true;
+        _pdfTextLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _pdfPageTexts = ['（扫描失败，请稍后重试或继续使用原始 PDF 阅读模式）'];
+        _pdfAsText = true;
+        _pdfTextLoading = false;
+      });
+    }
   }
 
   @override
@@ -249,10 +335,42 @@ class _ReaderScreenState extends State<ReaderScreen> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                onPressed: () {
-                  setState(() {
-                    showSettings = !showSettings;
-                  });
+                onPressed: () async {
+                  // 如果当前是 PDF 阅读模式，则将三个点用作“是否扫描为文字”的开关；
+                  // 对西游记这类普通文本阅读页则仍然作为设置入口。
+                  if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
+                    if (!_pdfAsText) {
+                      // 第一次开启：触发扫描，并提示用户
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('正在从 PDF 中提取文字并优化排版，请稍候...'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      await _ensurePdfText();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('已切换为「文字阅读模式」，向右滑动可继续翻页。'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    } else {
+                      setState(() {
+                        _pdfAsText = false;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('已切回「原始 PDF 模式」。'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } else {
+                    setState(() {
+                      showSettings = !showSettings;
+                    });
+                  }
                 },
                 icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF78716C)),
                 padding: EdgeInsets.zero,
@@ -267,6 +385,13 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   // 横向翻页内容
   Widget _buildPagedContent() {
+    // PDF 模式：在原始 PDF / 扫描文字两种模式之间切换
+    if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
+      if (_pdfAsText) {
+        return _buildPdfTextContent();
+      }
+      return _buildPdfContent();
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         // 计算可用高度：总高度 - 顶部栏高度 - SafeArea
@@ -290,6 +415,130 @@ class _ReaderScreenState extends State<ReaderScreen> {
             final blocks = pages[index - 1];
             return _buildReadingPage(blocks);
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildPdfContent() {
+    if (_pdfFilePath == null) {
+      return Center(
+        child: Text(
+          '正在加载 PDF…',
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+        ),
+      );
+    }
+
+    return Container(
+      color: const Color(0xFFFDFBF7),
+      child: PDFView(
+        filePath: _pdfFilePath!,
+        swipeHorizontal: true,
+        pageFling: true,
+        autoSpacing: false,
+        fitPolicy: FitPolicy.BOTH,
+        onRender: (pages) {
+          if (!mounted) return;
+          setState(() {
+            _pdfTotalPages = pages;
+            _pdfReady = true;
+          });
+        },
+        onError: (error) {
+          if (!mounted) return;
+          setState(() {
+            _pdfReady = false;
+          });
+        },
+        onPageChanged: (page, total) {
+          if (!mounted) return;
+          setState(() {
+            currentPage = page ?? 0;
+            _pdfTotalPages = total;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildPdfTextContent() {
+    if (_pdfTextLoading) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation(Color(0xFF4F46E5)),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '正在扫描并排版文字...',
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_pdfPageTexts.isEmpty) {
+      return Center(
+        child: Text(
+          '暂无可显示的文字内容',
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+        ),
+      );
+    }
+
+    return PageView.builder(
+      itemCount: _pdfPageTexts.length,
+      onPageChanged: (index) {
+        setState(() {
+          currentPage = index;
+        });
+      },
+      itemBuilder: (context, index) {
+        final text = _pdfPageTexts[index];
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '第 ${index + 1} 页',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF9CA3AF),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  text,
+                  textAlign: TextAlign.justify,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.8,
+                    fontFamily: 'serif',
+                    color: Color(0xFF1C1917),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
