@@ -84,11 +84,17 @@ class _AppContainerState extends State<AppContainer> {
       case 'home':
         return HomeScreen(
           onScan: () => navigateTo('scan'),
-          onUpload: () => navigateTo('pdf_reader', pdfPath: 'assets/PDF/paper.pdf'),
+          onUpload: () => navigateTo('scan', pdfPath: '__doc_chooser__'),
         );
       case 'scan':
+        final isDocChooser = pdfAssetPath == '__doc_chooser__';
         return ScanScreen(
           onFinish: () => navigateTo('intent'),
+          showDocChooser: isDocChooser,
+          onChooseA: isDocChooser ? () => navigateTo('pdf_reader', pdfPath: 'assets/PDF/paper.pdf') : null,
+          onChooseB: isDocChooser
+              ? () => navigateTo('pdf_reader', pdfPath: 'assets/PDF/Jane Eyre Selected Chapters.pdf')
+              : null,
         );
       case 'intent':
         return IntentScreen(
@@ -119,7 +125,7 @@ class _AppContainerState extends State<AppContainer> {
       default:
         return HomeScreen(
           onScan: () => navigateTo('scan'),
-          onUpload: () => navigateTo('pdf_reader', pdfPath: 'assets/PDF/paper.pdf'),
+          onUpload: () => navigateTo('scan', pdfPath: '__doc_chooser__'),
         );
     }
   }

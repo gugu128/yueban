@@ -3,8 +3,17 @@ import 'package:flutter/material.dart';
 
 class ScanScreen extends StatefulWidget {
   final VoidCallback onFinish;
+  final bool showDocChooser;
+  final VoidCallback? onChooseA;
+  final VoidCallback? onChooseB;
 
-  const ScanScreen({super.key, required this.onFinish});
+  const ScanScreen({
+    super.key,
+    required this.onFinish,
+    this.showDocChooser = false,
+    this.onChooseA,
+    this.onChooseB,
+  });
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -26,10 +35,13 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       CurvedAnimation(parent: _scanController, curve: Curves.easeInOut),
     );
 
-    // 模拟处理时间后跳转
-    Timer(const Duration(milliseconds: 2800), () {
-      widget.onFinish();
-    });
+    // “拍照”流程：模拟处理时间后自动跳转
+    // “上传文档”流程：显示右下角 A/B 两按钮，不自动跳转
+    if (!widget.showDocChooser) {
+      Timer(const Duration(milliseconds: 2800), () {
+        widget.onFinish();
+      });
+    }
   }
 
   @override
@@ -129,28 +141,51 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             right: 0,
             child: Column(
               children: [
-                const Text(
-                  'AI 正在提取排版与内容...',
-                  style: TextStyle(
+                Text(
+                  widget.showDocChooser ? '请选择要阅读的文档' : 'AI 正在提取排版与内容...',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildDot(0),
-                    const SizedBox(width: 8),
-                    _buildDot(150),
-                    const SizedBox(width: 8),
-                    _buildDot(300),
-                  ],
-                ),
+                if (!widget.showDocChooser)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildDot(0),
+                      const SizedBox(width: 8),
+                      _buildDot(150),
+                      const SizedBox(width: 8),
+                      _buildDot(300),
+                    ],
+                  ),
               ],
             ),
           ),
+          // 右下角 A/B 按钮（仅上传文档流程显示）
+          if (widget.showDocChooser)
+            Positioned(
+              right: 20,
+              bottom: 110,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildChoiceButton(
+                    label: 'A',
+                    onTap: widget.onChooseA,
+                    tooltip: '打开论文 paper.pdf',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildChoiceButton(
+                    label: 'B',
+                    onTap: widget.onChooseB,
+                    tooltip: '打开 Jane Eyre Selected Chapters.pdf',
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -227,6 +262,51 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           setState(() {});
         }
       },
+    );
+  }
+
+  Widget _buildChoiceButton({
+    required String label,
+    required VoidCallback? onTap,
+    required String tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF6366F1),
+                Color(0xFFA855F7),
+              ],
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6366F1).withOpacity(0.35),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

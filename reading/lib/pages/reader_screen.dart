@@ -54,6 +54,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
   bool _pdfAsText = false; // 是否将 PDF 转为文字阅读
   bool _pdfTextLoading = false;
   List<String> _pdfPageTexts = [];
+  bool _xyjPdfMode = true; // 西游记：默认展示 PDF 文档模式；开启“扫描成文本”后变为现有文本阅读（不改变）
+  String? _activePdfAsset; // 当前加载到临时文件的 PDF asset 路径
 
   @override
   void initState() {
@@ -71,20 +73,35 @@ class _ReaderScreenState extends State<ReaderScreen> {
     });
 
     // 如果是 PDF 阅读模式：提前把 asset 拷贝到临时文件（flutter_pdfview 需要 filePath）
-    if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
-      _preparePdf(widget.pdfAssetPath!.trim());
+    // - 上传论文：widget.pdfAssetPath != null
+    // - 西游记：默认 _xyjPdfMode=true 时使用 assets/PDF/xyj.PDF
+    final initialPdfAsset = _currentPdfAssetPath();
+    if (initialPdfAsset != null) {
+      _preparePdf(initialPdfAsset);
     }
+  }
+
+  String? _currentPdfAssetPath() {
+    final paper = widget.pdfAssetPath?.trim();
+    if (paper != null && paper.isNotEmpty) return paper;
+    // 只有在“西游记默认阅读页”才走这个逻辑
+    if (_xyjPdfMode) return 'assets/PDF/xyj.pdf';
+    return null;
   }
 
   Future<void> _preparePdf(String assetPath) async {
     try {
+      // 如果已经是这个 PDF，不重复拷贝
+      if (_activePdfAsset == assetPath && _pdfFilePath != null) return;
       final data = await rootBundle.load(assetPath);
       final bytes = data.buffer.asUint8List();
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/paper.pdf');
+      final name = assetPath.split('/').last;
+      final file = File('${dir.path}/$name');
       await file.writeAsBytes(bytes, flush: true);
       if (!mounted) return;
       setState(() {
+        _activePdfAsset = assetPath;
         _pdfFilePath = file.path;
       });
     } catch (_) {
@@ -385,10 +402,18 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   // 横向翻页内容
   Widget _buildPagedContent() {
-    // PDF 模式：在原始 PDF / 扫描文字两种模式之间切换
-    if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
-      if (_pdfAsText) {
-        return _buildPdfTextContent();
+    // PDF 模式：
+    // - 论文：支持 “原始 PDF / 扫描文字” 两种模式（三个点切换）
+    // - 西游记：默认展示 assets/PDF/xyj.PDF；“设置->扫描成文本”打开时回到原本的文本阅读（不改变）
+    final currentPdf = _currentPdfAssetPath();
+    if (currentPdf != null) {
+      if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
+        if (_pdfAsText) return _buildPdfTextContent();
+      }
+      // 确保当前 PDF 已加载到临时文件
+      if (_activePdfAsset != currentPdf) {
+        // 异步触发，不阻塞 build
+        _preparePdf(currentPdf);
       }
       return _buildPdfContent();
     }
@@ -1846,6 +1871,58 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               ),
                             ],
                           ),
+                          // 仅对“西游记”阅读页生效：切换 “PDF文档 / 扫描成文本”
+                          if (widget.pdfAssetPath == null) ...[
+                            const SizedBox(height: 18),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '扫描成文本',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF111827),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '关闭时阅读原始文档（assets/PDF/xyj.pdf）；开启后使用可高亮/批注的文本模式',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Switch(
+                                  // 开关“开”=扫描成文本=使用现有文本阅读（不改变）
+                                  value: !_xyjPdfMode,
+                                  onChanged: (scanAsText) async {
+                                    if (scanAsText) {
+                                      setState(() {
+                                        _xyjPdfMode = false; // 切到文本阅读
+                                      });
+                                      return;
+                                    }
+                                    // 开关“关”=文档模式=展示 xyj.pdf
+                                    setState(() {
+                                      _xyjPdfMode = true;
+                                    });
+                                    await _preparePdf('assets/PDF/xyj.pdf');
+                                  },
+                                  activeColor: const Color(0xFF4F46E5),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
