@@ -30,6 +30,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
   bool showCatalog = false;
   bool showSettings = false; // 显示设置面板
   bool immersiveReading = false; // 沉浸式阅读开关
+  String? selectedQuote; // 最近一次点击的原文
+  String dashboardTargetTab = 'chat'; // 打开工作台时默认落到的 tab
+  String? injectedQuote; // 传给工作台的引用文本
+  int quoteVersion = 0; // 引用变更序号，保证同样内容也能刷新
   late Role currentRole;
   bool showAutoImage = false;
   late PageController _pageController;
@@ -70,6 +74,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
     final screenSize = MediaQuery.of(context).size;
 
     setState(() {
+      selectedQuote = block.content;
       contextMenu = {
         'x': localPosition.dx.clamp(0.0, screenSize.width - 200),
         'y': localPosition.dy.clamp(0.0, screenSize.height - 100),
@@ -131,6 +136,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     currentRole: currentRole,
                     selectedCompanions: widget.selectedCompanions,
                     isGroupMode: isGroupMode,
+                  injectedTab: dashboardTargetTab,
+                  injectedQuote: injectedQuote,
+                  quoteVersion: quoteVersion,
                     onClose: () {
                       setState(() {
                         showDashboard = false;
@@ -498,12 +506,15 @@ class _ReaderScreenState extends State<ReaderScreen> {
               
               return GestureDetector(
                 onTapDown: (details) {
+                  // 点击：弹出两按钮菜单（AI陪读 / 深度探讨）
+                  _handleTextTap(details, block);
+                },
+                onLongPress: () {
+                  // 长按：仅对带下划线且有释义的块弹出释义，避免和“点击菜单”混淆
                   if (block.underline && block.explanation != null) {
                     setState(() {
                       showExplanationIndex = contentIndex;
                     });
-                  } else {
-                    _handleTextTap(details, block);
                   }
                 },
                 child: Container(
@@ -807,19 +818,21 @@ class _ReaderScreenState extends State<ReaderScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildContextMenuItem(Icons.search, '解释', () {
+              _buildContextMenuItem(Icons.group, 'AI陪读', () {
                 setState(() {
                   contextMenu = null;
+                  dashboardTargetTab = 'ai_helper';
+                  injectedQuote = selectedQuote;
+                  quoteVersion++;
+                  showDashboard = true;
                 });
               }),
-              _buildContextMenuItem(Icons.message_outlined, '问AI', () {
+              _buildContextMenuItem(Icons.forum_outlined, '深度探讨', () {
                 setState(() {
                   contextMenu = null;
-                });
-              }),
-              _buildContextMenuItem(Icons.work_outline, '迁移', () {
-                setState(() {
-                  contextMenu = null;
+                  dashboardTargetTab = 'deep';
+                  injectedQuote = selectedQuote;
+                  quoteVersion++;
                   showDashboard = true;
                 });
               }),
