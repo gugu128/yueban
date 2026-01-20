@@ -46,6 +46,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
   String dashboardTargetTab = 'chat'; // 打开工作台时默认落到的 tab
   String? injectedQuote; // 传给工作台的引用文本
   int quoteVersion = 0; // 引用变更序号，保证同样内容也能刷新
+  String? _lastSelectedText; // 上次选择的文本，用于防抖
+  DateTime? _lastSelectionTime; // 上次选择的时间
+  bool _isTranslationDialogOpen = false; // 防止重复弹窗
   late Role currentRole;
   bool showAutoImage = false;
   late PageController _pageController;
@@ -936,6 +939,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
     'The trees were laden with ripening fruit; the garden was beautiful.': '树上结满了成熟的果实；花园很美。',
   };
 
+  String _normalizeSelection(String s) {
+    return s.replaceAll(RegExp(r'\s+'), ' ').trim().toLowerCase();
+  }
+
   String? _getTranslation(String text) {
     if (!_isJaneEyre || !wordTranslationMode) return null;
     // 检查是否包含需要翻译的词或句子
@@ -1051,113 +1058,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   Widget _buildTranslatableText(BookContent block, int contentIndex, int originalIndex) {
     final text = block.content;
-    final List<TextSpan> spans = [];
-    int lastIndex = 0;
     
-    // 找到所有需要翻译的词和句子（按长度从长到短排序，避免短词匹配到长词的一部分）
-    final sortedEntries = _janeEyreTranslations.entries.toList()
-      ..sort((a, b) => b.key.length.compareTo(a.key.length));
-    
-    // 找到所有需要翻译的位置
-    final List<Map<String, dynamic>> translationRanges = [];
-    for (var entry in sortedEntries) {
-      final key = entry.key;
-      int start = 0;
-      while (start < text.length) {
-        final index = text.indexOf(key, start);
-        if (index == -1) break;
-        
-        // 检查是否与已有范围重叠
-        bool overlaps = false;
-        for (var existing in translationRanges) {
-          final existingStart = existing['start'] as int;
-          final existingEnd = existing['end'] as int;
-          if ((index >= existingStart && index < existingEnd) ||
-              (index + key.length > existingStart && index + key.length <= existingEnd) ||
-              (index < existingStart && index + key.length > existingEnd)) {
-            overlaps = true;
-            break;
-          }
-        }
-        
-        if (!overlaps) {
-          translationRanges.add({
-            'start': index,
-            'end': index + key.length,
-            'text': key,
-            'translation': entry.value,
-          });
-        }
-        
-        start = index + 1;
-      }
-    }
-    
-    // 按位置排序
-    translationRanges.sort((a, b) => (a['start'] as int).compareTo(b['start'] as int));
-    
-    // 构建TextSpan列表
-    for (var range in translationRanges) {
-      final start = range['start'] as int;
-      final end = range['end'] as int;
-      
-      // 添加翻译前的文本
-      if (start > lastIndex) {
-        spans.add(TextSpan(
-          text: text.substring(lastIndex, start),
-          style: TextStyle(
-            fontSize: 17,
-            height: 2.0,
-            color: const Color(0xFF1C1917),
-            fontFamily: 'serif',
-            backgroundColor: block.highlight
-                ? const Color(0xFFFEF3C7).withOpacity(0.8)
-                : Colors.transparent,
-          ),
-        ));
-      }
-      
-      // 添加需要翻译的文本（粉色高亮）
-      spans.add(TextSpan(
-        text: text.substring(start, end),
-        style: TextStyle(
-          fontSize: 17,
-          height: 2.0,
-          color: const Color(0xFF1C1917),
-          fontFamily: 'serif',
-          backgroundColor: const Color(0xFFFCE7F3).withOpacity(0.8), // 粉色荧光笔效果
-          decoration: TextDecoration.underline,
-          decorationColor: const Color(0xFFEC4899),
-          decorationStyle: TextDecorationStyle.solid,
-        ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () {
-            _showTranslationDialog(range['text'] as String, range['translation'] as String);
-          },
-      ));
-      
-      lastIndex = end;
-    }
-    
-    // 添加剩余文本
-    if (lastIndex < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastIndex),
-        style: TextStyle(
-          fontSize: 17,
-          height: 2.0,
-          color: const Color(0xFF1C1917),
-          fontFamily: 'serif',
-          backgroundColor: block.highlight
-              ? const Color(0xFFFEF3C7).withOpacity(0.8)
-              : Colors.transparent,
-        ),
-      ));
-    }
-    
-    // 如果没有找到需要翻译的内容，直接显示原文本
-    if (spans.isEmpty) {
-      spans.add(TextSpan(
+    // 不自动高亮，只显示普通文本
+    return SelectableText.rich(
+      TextSpan(
         text: text,
         style: TextStyle(
           fontSize: 17,
@@ -1168,17 +1072,57 @@ class _ReaderScreenState extends State<ReaderScreen> {
               ? const Color(0xFFFEF3C7).withOpacity(0.8)
               : Colors.transparent,
         ),
-      ));
-    }
-    
-    return SelectableText.rich(
-      TextSpan(children: spans),
+      ),
       textAlign: TextAlign.justify,
+      onSelectionChanged: (selection, cause) {
+        // 当用户选择文本时，查找翻译并显示
+        if (selection.isValid && !selection.isCollapsed) {
+          final start = selection.start.clamp(0, text.length);
+          final end = selection.end.clamp(0, text.length);
+          if (start >= end) return;
+          final selectedText = text.substring(start, end).trim();
+          if (selectedText.isNotEmpty && selectedText != _lastSelectedText) {
+            _lastSelectedText = selectedText;
+            _lastSelectionTime = DateTime.now();
+            
+            // 防抖：延迟300ms，如果用户还在选择则取消
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (!mounted) return;
+              if (_isTranslationDialogOpen) return;
+              // 检查是否还是同一个选择
+              if (_lastSelectedText == selectedText && 
+                  _lastSelectionTime != null &&
+                  DateTime.now().difference(_lastSelectionTime!).inMilliseconds >= 300) {
+                // 仅当“划词范围”与写死 key 完全一致时才显示翻译
+                final selectedNorm = _normalizeSelection(selectedText);
+                for (final entry in _janeEyreTranslations.entries) {
+                  final keyNorm = _normalizeSelection(entry.key);
+                  if (selectedNorm == keyNorm) {
+                    _isTranslationDialogOpen = true;
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      if (!mounted) return;
+                      await _showTranslationDialog(entry.key, entry.value);
+                      if (mounted) {
+                        _isTranslationDialogOpen = false;
+                      }
+                    });
+                    break;
+                  }
+                }
+              }
+            });
+          }
+        } else {
+          // 选择被取消或折叠
+          _lastSelectedText = null;
+          _lastSelectionTime = null;
+        }
+      },
     );
   }
 
-  void _showTranslationDialog(String original, String translation) {
-    showDialog(
+  Future<void> _showTranslationDialog(String original, String translation) async {
+    await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(

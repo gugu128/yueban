@@ -98,8 +98,8 @@ class _GraphTabState extends State<GraphTab> {
   Widget _buildNode(GraphNode node, BoxConstraints constraints) {
     final isSelected = selectedNode?.id == node.id;
     
-    // 对于简爱的罗切斯特节点，使用矩形
-    final isJaneEyreRochester = widget.bookId == 'jane_eyre' && node.id == 2;
+    // 对于简爱的所有节点，使用矩形
+    final isJaneEyreNode = widget.bookId == 'jane_eyre';
     
     // 计算文字宽度，动态调整节点大小
     final textPainter = TextPainter(
@@ -117,7 +117,7 @@ class _GraphTabState extends State<GraphTab> {
     
     double nodeWidth, nodeHeight, nodeX, nodeY;
     
-    if (isJaneEyreRochester) {
+    if (isJaneEyreNode) {
       // 矩形节点：根据文字宽度和高度计算
       final padding = 10.0;
       nodeWidth = (textPainter.width + padding * 2).clamp(80.0, 120.0);
@@ -159,8 +159,8 @@ class _GraphTabState extends State<GraphTab> {
           height: nodeHeight,
           decoration: BoxDecoration(
             color: _parseColor(node.color).withOpacity(0.85),
-            shape: isJaneEyreRochester ? BoxShape.rectangle : BoxShape.circle,
-            borderRadius: isJaneEyreRochester ? BorderRadius.circular(8) : null,
+            shape: isJaneEyreNode ? BoxShape.rectangle : BoxShape.circle,
+            borderRadius: isJaneEyreNode ? BorderRadius.circular(8) : null,
             border: Border.all(
               color: isSelected
                   ? Colors.white
