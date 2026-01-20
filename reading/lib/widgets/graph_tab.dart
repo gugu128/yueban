@@ -3,7 +3,12 @@ import 'package:reading/services/mock_data.dart';
 import 'package:reading/models/book_content.dart';
 
 class GraphTab extends StatefulWidget {
-  const GraphTab({super.key});
+  final String bookId; // 'xyj' 或 'jane_eyre'
+
+  const GraphTab({
+    super.key,
+    this.bookId = 'xyj',
+  });
 
   @override
   State<GraphTab> createState() => _GraphTabState();
@@ -15,6 +20,11 @@ class _GraphTabState extends State<GraphTab> {
 
   @override
   Widget build(BuildContext context) {
+    final nodes =
+        widget.bookId == 'jane_eyre' ? janeGraphNodes : graphNodes;
+    final relations =
+        widget.bookId == 'jane_eyre' ? janeGraphRelations : graphRelations;
+
     return Container(
       color: const Color(0xFF0F172A), // slate-900
       child: LayoutBuilder(
@@ -25,14 +35,14 @@ class _GraphTabState extends State<GraphTab> {
               CustomPaint(
                 size: constraints.biggest,
                 painter: GraphLinesPainter(
-                  relations: graphRelations,
-                  nodes: graphNodes,
+                  relations: relations,
+                  nodes: nodes,
                   constraints: constraints,
                   selectedRelation: selectedRelation,
                 ),
               ),
               // 节点
-              ...graphNodes.map((node) => _buildNode(node, constraints)),
+              ...nodes.map((node) => _buildNode(node, constraints)),
               // 标题
               Positioned(
                 top: 16,

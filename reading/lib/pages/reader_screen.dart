@@ -14,6 +14,7 @@ class ReaderScreen extends StatefulWidget {
   final bool isGroupMode;
   final VoidCallback onBack;
   final String? pdfAssetPath; // 资产 PDF 路径：例如 assets/PDF/paper.pdf
+  final String bookId; // 当前阅读书目：xyj / jane_eyre / paper
 
   const ReaderScreen({
     super.key,
@@ -22,6 +23,7 @@ class ReaderScreen extends StatefulWidget {
     this.isGroupMode = false,
     required this.onBack,
     this.pdfAssetPath,
+    this.bookId = 'xyj',
   });
 
   @override
@@ -81,6 +83,39 @@ class _ReaderScreenState extends State<ReaderScreen> {
     }
   }
 
+  bool get _isJaneEyre =>
+      widget.bookId == 'jane_eyre' ||
+      (widget.pdfAssetPath != null &&
+          widget.pdfAssetPath!.contains('Jane Eyre'));
+
+  List<BookContent> get _activeBookContent {
+    if (_isJaneEyre) {
+      return janeEyreContent;
+    }
+    return bookContent;
+  }
+
+  Map<int, Comment> get _activeComments {
+    if (_isJaneEyre) {
+      return janeComments;
+    }
+    return comments;
+  }
+
+  List<Chapter> get _activeChapters {
+    if (_isJaneEyre) {
+      return janeChapters;
+    }
+    return chapters;
+  }
+
+  String get _activeFullBookSummary {
+    if (_isJaneEyre) {
+      return janeFullBookSummary;
+    }
+    return fullBookSummary;
+  }
+
   String? _currentPdfAssetPath() {
     final paper = widget.pdfAssetPath?.trim();
     if (paper != null && paper.isNotEmpty) return paper;
@@ -127,27 +162,36 @@ class _ReaderScreenState extends State<ReaderScreen> {
     });
 
     try {
-      // 直接从 asset 读取 PDF bytes 做文本抽取，避免再次从临时文件读取失败
-      final data = await rootBundle.load(widget.pdfAssetPath!.trim());
-      final bytes = data.buffer.asUint8List();
-      final PdfDocument document = PdfDocument(inputBytes: bytes);
+      // 针对简·爱节选：优先使用预置英文原文，保证与教案内容一致
+      List<String> pages;
+      if (_isJaneEyre) {
+        pages = [janeEyreChapter23Text.trim()];
+      } else {
+        // 其他 PDF：从 asset 读取 bytes 做文本抽取
+        final data = await rootBundle.load(widget.pdfAssetPath!.trim());
+        final bytes = data.buffer.asUint8List();
+        final PdfDocument document = PdfDocument(inputBytes: bytes);
 
-      final List<String> pages = [];
-      final extractor = PdfTextExtractor(document);
-      for (int i = 0; i < document.pages.count; i++) {
-        final text = extractor.extractText(
-          startPageIndex: i,
-          endPageIndex: i,
-        ).trim();
-        if (text.isNotEmpty) {
-          pages.add(text);
+        pages = [];
+        final extractor = PdfTextExtractor(document);
+        for (int i = 0; i < document.pages.count; i++) {
+          final text = extractor
+              .extractText(
+                startPageIndex: i,
+                endPageIndex: i,
+              )
+              .trim();
+          if (text.isNotEmpty) {
+            pages.add(text);
+          }
         }
+        document.dispose();
       }
-      document.dispose();
 
       if (!mounted) return;
       setState(() {
-        _pdfPageTexts = pages.isEmpty ? ['（未能从 PDF 中提取到可阅读文本）'] : pages;
+        _pdfPageTexts =
+            pages.isEmpty ? ['（未能从 PDF 中提取到可阅读文本）'] : pages;
         _pdfAsText = true;
         _pdfTextLoading = false;
       });
@@ -239,6 +283,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     currentRole: currentRole,
                     selectedCompanions: widget.selectedCompanions,
                     isGroupMode: isGroupMode,
+                    bookId: widget.bookId,
                   injectedTab: dashboardTargetTab,
                   injectedQuote: injectedQuote,
                   quoteVersion: quoteVersion,
@@ -352,42 +397,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                onPressed: () async {
-                  // 如果当前是 PDF 阅读模式，则将三个点用作“是否扫描为文字”的开关；
-                  // 对西游记这类普通文本阅读页则仍然作为设置入口。
-                  if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
-                    if (!_pdfAsText) {
-                      // 第一次开启：触发扫描，并提示用户
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('正在从 PDF 中提取文字并优化排版，请稍候...'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      await _ensurePdfText();
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('已切换为「文字阅读模式」，向右滑动可继续翻页。'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    } else {
-                      setState(() {
-                        _pdfAsText = false;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('已切回「原始 PDF 模式」。'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  } else {
-                    setState(() {
-                      showSettings = !showSettings;
-                    });
-                  }
+                onPressed: () {
+                  // 所有模式统一通过「设置」面板展示沉浸式/扫描文本等开关
+                  setState(() {
+                    showSettings = !showSettings;
+                  });
                 },
                 icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF78716C)),
                 padding: EdgeInsets.zero,
@@ -402,21 +416,43 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   // 横向翻页内容
   Widget _buildPagedContent() {
-    // PDF 模式：
-    // - 论文：支持 “原始 PDF / 扫描文字” 两种模式（三个点切换）
-    // - 西游记：默认展示 assets/PDF/xyj.PDF；“设置->扫描成文本”打开时回到原本的文本阅读（不改变）
-    final currentPdf = _currentPdfAssetPath();
-    if (currentPdf != null) {
-      if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
-        if (_pdfAsText) return _buildPdfTextContent();
+    // 1）上传文档 A/B：包括“简·爱选段”的 PDF
+    if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
+      // B 选项：简·爱 PDF → 开启“扫描成文本”后，直接进入支持高亮/批注的文本阅读模式
+      if (_isJaneEyre && _pdfAsText) {
+        return _buildTextBookPagedContent();
       }
-      // 确保当前 PDF 已加载到临时文件
+
+      final currentPdf = _currentPdfAssetPath();
+      if (currentPdf != null) {
+        if (_pdfAsText) {
+          // 通用上传论文的“扫描成文本”模式
+          return _buildPdfTextContent();
+        }
+        if (_activePdfAsset != currentPdf) {
+          _preparePdf(currentPdf);
+        }
+        return _buildPdfContent();
+      }
+    }
+
+    // 2）西游记默认阅读页：
+    // - _xyjPdfMode=true：展示 xyj.pdf
+    // - _xyjPdfMode=false：保持文本阅读（支持高亮/批注）
+    final currentPdf = _currentPdfAssetPath();
+    if (currentPdf != null && _xyjPdfMode) {
       if (_activePdfAsset != currentPdf) {
-        // 异步触发，不阻塞 build
         _preparePdf(currentPdf);
       }
       return _buildPdfContent();
     }
+
+    // 3）文本模式：西游记 & 简·爱共用
+    return _buildTextBookPagedContent();
+  }
+
+  // 仅文本模式下的分页阅读
+  Widget _buildTextBookPagedContent() {
     return LayoutBuilder(
       builder: (context, constraints) {
         // 计算可用高度：总高度 - 顶部栏高度 - SafeArea
@@ -570,7 +606,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   List<List<BookContent>> _buildContentPages(double availableHeight, double screenWidth) {
-    final contents = bookContent.where((b) => b.type != 'title' && b.type != 'image_gen').toList();
+    final contents = _activeBookContent
+        .where((b) => b.type != 'title' && b.type != 'image_gen')
+        .toList();
     final List<List<BookContent>> result = [];
     
     // 使用 TextPainter 精确计算每页能容纳的内容
@@ -621,6 +659,138 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   Widget _buildCoverPage() {
+    if (_isJaneEyre) {
+      final chapter = _activeChapters.first;
+
+      final imageAssets = const [
+        'assets/images/ja1.png',
+        'assets/images/ja2.png',
+        'assets/images/ja3.png',
+        'assets/images/ja4.png',
+      ];
+
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Text(
+                chapter.title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'serif',
+                  color: Color(0xFF1C1917),
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                'AI 小助手为你伴读《Jane Eyre》求婚场景',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ...imageAssets.map((asset) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: GestureDetector(
+                  onTap: () => _showImagePreview(asset),
+                  child: Hero(
+                    tag: asset,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        children: [
+                          Image.asset(
+                            asset,
+                            width: double.infinity,
+                            height: 240,
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withOpacity(0.0),
+                                    Colors.black.withOpacity(0.7),
+                                  ],
+                                ),
+                              ),
+                              child: const Text(
+                                'AI生成插画',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF2FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.auto_awesome,
+                          size: 16, color: Color(0xFF4F46E5)),
+                      SizedBox(width: 6),
+                      Text(
+                        'AI 章节概括',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    chapter.aiSummary,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.6,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final chapter = chapters.firstWhere(
       (c) => c.chapterNumber == 59,
       orElse: () => chapters.first,
@@ -636,6 +806,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
@@ -696,9 +867,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                 ],
                               ),
                             ),
-                            child: Text(
+                            child: const Text(
                               'AI生成插画',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.white,
                                 fontWeight: FontWeight.w500,
@@ -755,15 +926,19 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   Widget _buildReadingPage(List<BookContent> blocks) {
-    final contentBlocks = bookContent.where((b) => b.type != 'title' && b.type != 'image_gen').toList();
+    final contentBlocks = _activeBookContent
+        .where((b) => b.type != 'title' && b.type != 'image_gen')
+        .toList();
     
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+        return SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
             children: blocks.asMap().entries.map((entry) {
               final index = entry.key;
               final block = entry.value;
@@ -776,7 +951,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
               // 找到在完整内容列表中的索引（排除title和image_gen）
               final contentIndex = contentBlocks.indexOf(block);
               // 找到在bookContent数组中的原始索引
-              final originalIndex = bookContent.indexOf(block);
+              final originalIndex = _activeBookContent.indexOf(block);
               
               return GestureDetector(
                 onTapDown: (details) {
@@ -837,6 +1012,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 ),
               );
             }).toList(),
+            ),
           ),
         );
       },
@@ -869,7 +1045,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   Widget _buildCatalogPanel() {
-    final catalogChapters = chapters.where((c) => c.chapterNumber >= 59 && c.chapterNumber <= 63).toList();
+    final catalogChapters = _isJaneEyre
+        ? janeChapters
+        : chapters
+            .where((c) => c.chapterNumber >= 59 && c.chapterNumber <= 63)
+            .toList();
     return Positioned.fill(
       child: GestureDetector(
         onTap: () {
@@ -949,8 +1129,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  const Text(
-                                    fullBookSummary,
+                                  Text(
+                                    _activeFullBookSummary,
                                     style: TextStyle(
                                       fontSize: 13,
                                       height: 1.6,
@@ -1429,7 +1609,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   Widget _buildCommentPanel() {
     if (showCommentIndex == null) return const SizedBox.shrink();
     
-    final comment = comments[showCommentIndex];
+    final comment = _activeComments[showCommentIndex];
     if (comment == null) return const SizedBox.shrink();
 
     // 过滤出特朗普、鲁迅、宫崎骏的评论
@@ -1614,7 +1794,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
   Widget _buildExplanationPanel() {
     if (showExplanationIndex == null) return const SizedBox.shrink();
     
-    final contentBlocks = bookContent.where((b) => b.type != 'title' && b.type != 'image_gen').toList();
+    final contentBlocks = _activeBookContent
+        .where((b) => b.type != 'title' && b.type != 'image_gen')
+        .toList();
     if (showExplanationIndex! >= contentBlocks.length) return const SizedBox.shrink();
     
     final block = contentBlocks[showExplanationIndex!];
@@ -1871,7 +2053,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               ),
                             ],
                           ),
-                          // 仅对“西游记”阅读页生效：切换 “PDF文档 / 扫描成文本”
+                          // 扫描成文本：
+                          // - 西游记：在 PDF / 文本两种模式间切换
+                          // - 上传文档（论文 / 简·爱）：控制是否从 PDF 切到文字模式
                           if (widget.pdfAssetPath == null) ...[
                             const SizedBox(height: 18),
                             Row(
@@ -1917,6 +2101,76 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                       _xyjPdfMode = true;
                                     });
                                     await _preparePdf('assets/PDF/xyj.pdf');
+                                  },
+                                  activeColor: const Color(0xFF4F46E5),
+                                ),
+                              ],
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 18),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '扫描成文本',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF111827),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _isJaneEyre
+                                            ? '关闭时阅读《简·爱》原始 PDF；开启后使用可高亮/批注的文本模式（当前节选章节）。'
+                                            : '关闭时阅读原始 PDF 文档；开启后使用自动排版的文字模式（仅供预览）。',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Switch(
+                                  value: _pdfAsText,
+                                  onChanged: (scanAsText) async {
+                                    if (scanAsText) {
+                                      if (_pdfPageTexts.isEmpty && !_isJaneEyre) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('正在从 PDF 中提取文字并优化排版，请稍候...'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                      await _ensurePdfText();
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(_isJaneEyre
+                                              ? '已切换为《简·爱》原文「文字阅读模式」，可进行高亮、批注与释义。'
+                                              : '已切换为「文字阅读模式」，向右滑动可继续翻页。'),
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
+                                    } else {
+                                      setState(() {
+                                        _pdfAsText = false;
+                                      });
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('已切回「原始 PDF 模式」。'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
                                   },
                                   activeColor: const Color(0xFF4F46E5),
                                 ),

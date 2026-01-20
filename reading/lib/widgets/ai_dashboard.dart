@@ -10,6 +10,7 @@ class AIDashboard extends StatefulWidget {
   final Role currentRole;
   final List<Role> selectedCompanions;
   final bool isGroupMode;
+  final String bookId; // 当前书目：xyj / jane_eyre / paper
   final String injectedTab; // 默认显示的 tab
   final String? injectedQuote; // 从正文划词传入的引用
   final int quoteVersion; // 引用变更序号
@@ -29,6 +30,7 @@ class AIDashboard extends StatefulWidget {
     required this.onClose,
     required this.onRoleChanged,
     this.onGroupModeToggle,
+    this.bookId = 'xyj',
   });
 
   @override
@@ -225,7 +227,7 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
           onGroupModeToggle: widget.onGroupModeToggle,
         );
       case 'graph':
-        return const GraphTab();
+        return GraphTab(bookId: widget.bookId);
       case 'lab':
         return const LabTab();
       case 'create':

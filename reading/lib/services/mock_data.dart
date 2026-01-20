@@ -196,6 +196,129 @@ final List<BookContent> bookContent = [
   ),
 ];
 
+// 《Jane Eyre》节选 - Chapter XXIII（求婚场景）
+final List<BookContent> janeEyreContent = [
+  BookContent(
+    type: 'title',
+    content: 'Jane Eyre · Chapter XXIII —— The Proposal / 求婚',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        'A splendid Midsummer shone over England: skies so pure, suns so radiant as were then seen in long succession, '
+        'seldom favour even singly our wave-girt land. It was as if a band of Italian days had come from the South, '
+        'like a flock of glorious passenger birds, and lighted to rest them on the cliffs of Albion.',
+    underline: true,
+    explanation:
+        '开头用“盛夏”“意大利的日子”“候鸟”等明亮意象，营造出近乎梦境般的浪漫氛围，为后面的求婚做情绪铺垫；'
+        '天气与自然暗暗呼应简·爱的心境——从压抑走向光亮。',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        'I was in the garden. Mr. Rochester had been walking there earlier; I had seen him enter the house. '
+        'I thought I was safe, and I went down to the orchard. But he was there. He had not gone in. '
+        'He stood by the wicket, looking at a great moth, a sphinx moth, causing it to flutter.',
+  ),
+  BookContent(
+    type: 'text',
+    content: '"Jane, come and look at this fellow," said he.',
+    highlight: true,
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        'The trees were laden with ripening fruit; the garden was beautiful.',
+    underline: true,
+    explanation:
+        '“果实累累”的花园象征着感情与命运即将成熟，和即将到来的求婚形成呼应，是一种典型的象征性景物描写。',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        '"You have examined him long enough," said he. "The creature is a real elf. He reminds me of you." '
+        'He paused, and then added, "Jane, I must have you for my own—entirely my own. Will you be mine? Say yes, quickly."',
+    highlight: true,
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        '"Mr. Rochester, let me look at your face: turn to the moonlight."',
+    underline: true,
+    explanation:
+        '简·爱要求“在月光下看清你的脸”，既是字面上的“看清表情”，也是象征性的“审视真相与人品”，体现她理性、克制的一面。',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        '"Because I want to read your countenance—turn!"\n\n'
+        '"There! you will find it hardly more legible than a crumpled, scratched page. Read on: only make haste, for I suffer."',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        'His face was very much agitated and very much flushed, and there were strong workings in the features when he turned them to the light.\n\n'
+        '"Oh, Jane, you torture me!" he exclaimed. "With that searching and yet faithful and generous look, you torture me!"',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        '"How can I do that? If you are true, and your offer real, my only feelings to you must be gratitude and devotion—they cannot torture."',
+    underline: true,
+    explanation:
+        '简·爱强调“如果你是真诚的，我对你只有感激与奉献”，把爱情建立在平等与尊严之上，而不是盲目迷恋，凸显她的自尊与清醒。',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        '"Gratitude!" he ejaculated; and added wildly—"Jane, accept me quickly. Say, Edward—give me my name—Edward—I will marry you."',
+    highlight: true,
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        '"Are you in earnest? Do you truly love me? Do you sincerely wish me to be your wife?"\n\n'
+        '"I do; and if an oath is necessary to satisfy you, I swear it."\n\n'
+        '"Then, sir, I will marry you."',
+    highlight: true,
+  ),
+  BookContent(
+    type: 'text',
+    content: '"Edward—my little wife!"\n\n"Dear Edward!"',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        '"Come to me—come to me entirely now," said he; and added, in his deepest tone, speaking in my ear as his cheek was laid on mine, '
+        '"Make my happiness—I will make yours."',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        '"God pardon me!" he subjoined ere long; "and man meddle not with me: I have her, and will hold her."\n\n'
+        '"There is no one to meddle, sir. I have no kindred to interfere."\n\n'
+        '"No—that is the best of it," he said.',
+    underline: true,
+    explanation:
+        '这里点出简·爱的“无亲无故”，既是她社会地位的弱势，也是她在情感上倍加小心的原因——她几乎把全部人生押在这段婚姻上。',
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        'The wind roared high in the great trees which embowered us; but a mile off, and as far out of the garden, we heard nothing but the soft sighing of the breeze. '
+        'A bolt of lightning tore the sky, and the thunder crashed. The rain rushed down. We ran to the house.',
+    highlight: true,
+  ),
+  BookContent(
+    type: 'text',
+    content:
+        'In the morning, the great horse-chestnut at the bottom of the orchard had been struck by lightning, and half of it split away.',
+    underline: true,
+    explanation:
+        '被雷劈成两半的七叶树是本章最经典的“预兆”意象：象征这段婚姻表面结合、实则暗藏断裂，也预示着后文婚礼被阻与真相揭露。',
+  ),
+];
+
 // 所有可用的陪读角色
 final List<Role> allCompanionRoles = [
   Role(
@@ -464,6 +587,118 @@ final List<GraphNode> graphNodes = [
   ),
 ];
 
+// 《简·爱》节选人物关系图谱节点
+final List<GraphNode> janeGraphNodes = [
+  GraphNode(
+    id: 1,
+    label: '简·爱 Jane Eyre',
+    x: 50,
+    y: 50,
+    color: '#4f46e5',
+    size: 60,
+    avatar: '📖',
+    description: '孤女出身、性格坚韧的家庭女教师，在桑菲尔德庄园工作。她渴望爱情，但更看重人格独立与平等。',
+    relatedEvents: [
+      '被聘为桑菲尔德庄园的家庭教师，负责教导阿黛勒。',
+      '在花园中与罗切斯特先生的对话逐渐加深，相互吸引。',
+      '在月光下认真审视罗切斯特的脸，反复确认他的真诚与动机。',
+      '在求婚夜风暴中答应罗切斯特，却在后来婚礼前得知其隐瞒的秘密。',
+    ],
+  ),
+  GraphNode(
+    id: 2,
+    label: '罗切斯特 Mr. Rochester',
+    x: 25,
+    y: 30,
+    color: '#dc2626',
+    size: 55,
+    avatar: '🕴️',
+    description: '桑菲尔德庄园的主人，性格复杂、情绪强烈，对简·爱产生真挚但带有占有欲的爱情。',
+    relatedEvents: [
+      '雇佣简·爱做阿黛勒的家庭教师。',
+      '多次以试探性的对话、玩笑和冷淡来测试简·爱的内心。',
+      '在花园里向简·爱求婚，强调"entirely my own"的占有欲。',
+      '隐瞒已有婚姻与阁楼疯妻子的事实，为后续悲剧埋下伏笔。',
+    ],
+  ),
+  GraphNode(
+    id: 3,
+    label: '伯莎 Bertha Mason',
+    x: 75,
+    y: 25,
+    color: '#6b21a8',
+    size: 50,
+    avatar: '🔥',
+    description: '罗切斯特在牙买加娶的妻子，精神失常，被秘密锁在桑菲尔德阁楼，是婚礼被阻与庄园焚毁的直接引线。',
+    relatedEvents: [
+      '被罗切斯特藏在桑菲尔德庄园的阁楼中，由格蕾丝看管。',
+      '多次在夜晚发出怪声、撕毁物品，给简·爱的梦境和现实投下阴影。',
+      '婚礼前夜闯入简·爱的房间，撕碎婚纱，成为明显的"噩兆"。',
+      '最终放火烧毁桑菲尔德，在火中丧生，彻底揭开隐藏的真相。',
+    ],
+  ),
+  GraphNode(
+    id: 4,
+    label: '费尔法克斯太太 Mrs. Fairfax',
+    x: 15,
+    y: 75,
+    color: '#0ea5e9',
+    size: 45,
+    avatar: '🧵',
+    description: '桑菲尔德庄园的管家，对简·爱关照有加，但对罗切斯特的过去有所隐瞒，代表旧式谨慎温和的女性形象。',
+    relatedEvents: [
+      '负责打点桑菲尔德庄园日常事务，安排简·爱的起居与工作。',
+      '成为简·爱最早的倾诉对象，却对主人的秘密只字不提。',
+      '在订婚后，对这段地位悬殊的感情表达担忧，提醒简·爱要谨慎。',
+    ],
+  ),
+  GraphNode(
+    id: 5,
+    label: '阿黛勒 Adèle',
+    x: 75,
+    y: 75,
+    color: '#22c55e',
+    size: 45,
+    avatar: '🎀',
+    description: '罗切斯特收养的法国小女孩，简·爱的学生，活泼天真，也是推动简·爱与罗切斯特相互了解的纽带之一。',
+    relatedEvents: [
+      '由简·爱负责教育与照顾，逐渐与简建立亲密的师生关系。',
+      '她的存在让简·爱看到罗切斯特温柔、负责的一面。',
+      '在庄园社交场景中，常作为"调剂"，缓和紧张氛围。',
+    ],
+  ),
+  GraphNode(
+    id: 6,
+    label: '桑菲尔德庄园 Thornfield',
+    x: 50,
+    y: 15,
+    color: '#f97316',
+    size: 45,
+    avatar: '🏰',
+    description: '故事主要发生地，既是庇护所，也是秘密与压抑的容器，从平静庄园走向被大火吞没的废墟。',
+    relatedEvents: [
+      '简·爱第一次真正感到"像家一样"的地方。',
+      '隐藏着阁楼疯妻子的秘密，夜半怪声不断。',
+      '在婚礼真相被揭露后，最终被伯莎放火焚毁。',
+    ],
+  ),
+  GraphNode(
+    id: 7,
+    label: '七叶树 Chestnut Tree',
+    x: 85,
+    y: 50,
+    color: '#16a34a',
+    size: 40,
+    avatar: '🌳',
+    description: '花园中的大七叶树，是求婚夜简·爱与罗切斯特约会的地点，第二天被雷劈成两半，成为命运裂缝的经典象征。',
+    relatedEvents: [
+      '求婚当夜，两人在树下散步、告白、拥抱。',
+      '雷雨之后被劈成两半，预示这段婚姻表面结合、内里撕裂。',
+      '在简·爱离开后，这棵树成为她回忆与命运转折的意象锚点。',
+    ],
+  ),
+];
+
 // 图谱关系数据（第五十九回人物关系）
 final List<GraphRelation> graphRelations = [
   GraphRelation(
@@ -545,6 +780,115 @@ final List<GraphRelation> graphRelations = [
     label: '受阻',
     description: '火焰山阻挡西行之路',
     relatedEvents: ['必须通过', '需要芭蕉扇'],
+  ),
+];
+
+// 《简·爱》节选人物关系连线
+final List<GraphRelation> janeGraphRelations = [
+  GraphRelation(
+    fromId: 1,
+    toId: 2,
+    relationType: 'friend',
+    label: '恋人',
+    description: '简·爱与罗切斯特在桑菲尔德相识、相爱，但这段感情一开始就存在地位与秘密的不平等。',
+    relatedEvents: [
+      '花园散步与谈心，彼此坦露内心孤独与痛苦。',
+      '在七叶树下完成求婚，简多次反问以确认真诚。',
+      '婚礼前夜与婚礼当日，因隐瞒的婚姻真相而被迫中断结合。',
+    ],
+  ),
+  GraphRelation(
+    fromId: 2,
+    toId: 3,
+    relationType: 'family',
+    label: '婚姻（名义上）',
+    description: '罗切斯特与伯莎在牙买加按照法律结婚，但感情早已破裂，却仍在法律上形成束缚。',
+    relatedEvents: [
+      '罗切斯特在牧师与律师的逼问下不得不承认已有妻子。',
+      '婚礼被阻时，众人被带去阁楼目睹伯莎的存在。',
+      '他以“被骗婚”为由为自己辩解，却难以真正洗清欺瞒责任。',
+    ],
+  ),
+  GraphRelation(
+    fromId: 1,
+    toId: 3,
+    relationType: 'enemy',
+    label: '命运对立',
+    description: '伯莎的存在让简·爱的爱情无法合法成立，两人从未真正对话，却在命运层面互相牵扯。',
+    relatedEvents: [
+      '伯莎撕碎简·爱的婚纱，象征她对这段新婚姻的直接否定。',
+      '阁楼怪声与梦境不断打扰简·爱的安全感。',
+      '庄园被大火烧毁后，伯莎死亡，简与罗切斯特的关系才有重建的可能。',
+    ],
+  ),
+  GraphRelation(
+    fromId: 1,
+    toId: 4,
+    relationType: 'friend',
+    label: '长辈关照',
+    description: '费尔法克斯太太像一位保守但善良的长辈，对简·爱关照有加，也对这段恋情心存顾虑。',
+    relatedEvents: [
+      '刚到桑菲尔德时由费尔法克斯太太接待并安顿生活。',
+      '简·爱在感情上困惑时会向她倾诉，但对罗切斯特过去仍被遮掩。',
+      '订婚后，她提醒简·爱考虑门第差距与现实压力。',
+    ],
+  ),
+  GraphRelation(
+    fromId: 1,
+    toId: 5,
+    relationType: 'master',
+    label: '教师与学生',
+    description: '简·爱既是阿黛勒的教师，又像半个母亲，通过教育关系让自己在庄园里拥有“被需要”的位置。',
+    relatedEvents: [
+      '每天在课堂上教阿黛勒语言、音乐与礼仪。',
+      '在教育过程中看到阿黛勒性格的天真与虚荣，反衬简·爱的克制与理性。',
+      '与阿黛勒的互动多次成为缓和罗切斯特阴郁气氛的小插曲。',
+    ],
+  ),
+  GraphRelation(
+    fromId: 2,
+    toId: 5,
+    relationType: 'family',
+    label: '监护人',
+    description: '罗切斯特以监护人的身份收养阿黛勒，既出于责任，也带有对过去感情的复杂补偿。',
+    relatedEvents: [
+      '他资助阿黛勒的教育与生活，使其留在桑菲尔德抚养长大。',
+      '在简面前多次以“是否喜欢阿黛勒”来试探她能否接受自己的过去。',
+    ],
+  ),
+  GraphRelation(
+    fromId: 2,
+    toId: 6,
+    relationType: 'possess',
+    label: '庄园主人',
+    description: '罗切斯特是桑菲尔德庄园的主人，庄园既是他的财产也是他用来隐藏秘密的空间。',
+    relatedEvents: [
+      '在庄园中组织舞会、接待贵族宾客，扮演绅士地主的角色。',
+      '在阁楼上秘密关押伯莎，试图把过去封死在墙后。',
+    ],
+  ),
+  GraphRelation(
+    fromId: 1,
+    toId: 6,
+    relationType: 'location',
+    label: '成长舞台',
+    description: '桑菲尔德对简·爱而言既是庇护所，也是她面对诱惑、秘密与抉择的试炼场。',
+    relatedEvents: [
+      '在这里第一次感觉自己被真正尊重与需要。',
+      '在这里体验到爱情的甜蜜与残酷真相的撕裂。',
+      '离开桑菲尔德，是她在爱情与自尊之间做出的艰难选择。',
+    ],
+  ),
+  GraphRelation(
+    fromId: 1,
+    toId: 7,
+    relationType: 'location',
+    label: '命运之树',
+    description: '七叶树见证了求婚与雷击，是简·爱爱情故事中最具象征性的意象之一。',
+    relatedEvents: [
+      '求婚当夜，两人在树下告白、相拥。',
+      '雷雨之后树被劈成两半，被简·爱视为不祥之兆。',
+    ],
   ),
 ];
 
@@ -931,6 +1275,154 @@ final Map<int, Comment> comments = {
   ),
 };
 
+// 《Jane Eyre》节选批注：索引基于 janeEyreContent
+final Map<int, Comment> janeComments = {
+  1: Comment(
+    commentId: 'j1',
+    content:
+        'A splendid Midsummer shone over England: skies so pure, suns so radiant...',
+    contentIndex: 1,
+    annotations: [
+      Annotation(
+        reviewerId: 'luxun',
+        reviewerName: '鲁迅',
+        reviewerAvatar: '📚',
+        comment:
+            '这段看似只是写天气，其实是在为人物的情感高涨铺垫。光鲜的外衣之下，往往潜伏着难以言说的裂缝——后文那棵被雷劈开的七叶树，便是这场“好天气”真正的注脚。',
+      ),
+      Annotation(
+        reviewerId: 'miyazaki',
+        reviewerName: '宫崎骏',
+        reviewerAvatar: '🎨',
+        comment:
+            '我很喜欢这样的开头。像动画分镜一样，镜头从天空、太阳、候鸟一路推到花园里的两个人。自然不是背景，而是情绪的同伴，好天气既是祝福，也是命运开玩笑前的宁静一刻。',
+      ),
+      Annotation(
+        reviewerId: 'trump',
+        reviewerName: '唐纳德·特朗普',
+        reviewerAvatar: '💼',
+        comment:
+            '好天气，完美的场景，绝佳的“求婚时间点”。相信我，如果你想达成一笔重要“交易”，场景布置很关键。罗切斯特很懂——他不会在暴风雨里开口的，至少表面上不会。',
+      ),
+    ],
+  ),
+  3: Comment(
+    commentId: 'j1a',
+    content: '"Jane, come and look at this fellow," said he.',
+    contentIndex: 3,
+    annotations: [
+      Annotation(
+        reviewerId: 'luxun',
+        reviewerName: '鲁迅',
+        reviewerAvatar: '📚',
+        comment:
+            '罗切斯特用"这个小家伙"称呼蛾子，既是对自然的亲近，也是借物喻人，试探简·爱的反应。这种看似随意的对话，其实是他精心设计的情感前奏。',
+      ),
+      Annotation(
+        reviewerId: 'trump',
+        reviewerName: '唐纳德·特朗普',
+        reviewerAvatar: '💼',
+        comment:
+            '聪明的开场！他在找一个话题，避免直接表白。就像商业谈判，你不能一开始就亮底牌，得先找个共同话题。这只蛾子就是他的"开场白"。',
+      ),
+      Annotation(
+        reviewerId: 'miyazaki',
+        reviewerName: '宫崎骏',
+        reviewerAvatar: '🎨',
+        comment:
+            '我特别喜欢这个细节。一只蛾子在月光下扑腾，两个人在花园里停下脚步。这种微小的事物成为情感交流的桥梁，正是我想在动画中表达的——自然如何连接人心。',
+      ),
+    ],
+  ),
+  4: Comment(
+    commentId: 'j2',
+    content:
+        '"Jane, I must have you for my own—entirely my own. Will you be mine?"',
+    contentIndex: 4,
+    annotations: [
+      Annotation(
+        reviewerId: 'luxun',
+        reviewerName: '鲁迅',
+        reviewerAvatar: '📚',
+        comment:
+            '“entirely my own”把男性对占有的欲望暴露得一干二净。爱情名义之下，常常包着支配与控制的冲动。幸而简·爱并非逆来顺受的“传统女主”，她后面对平等与尊严的坚持，才让这场求婚不至于沦为单方面的征服。',
+      ),
+      Annotation(
+        reviewerId: 'trump',
+        reviewerName: '唐纳德·特朗普',
+        reviewerAvatar: '💼',
+        comment:
+            '他在做一个“并购要约”——要 100% 控股，毫不掩饰。这点我很欣赏，直截了当，非常诚实。但问题是，他有没有把自己的债务和隐藏风险（比如已经有一段婚姻）写进“招股说明书”？如果没有，那就是严重的信息披露问题。',
+      ),
+      Annotation(
+        reviewerId: 'miyazaki',
+        reviewerName: '宫崎骏',
+        reviewerAvatar: '🎨',
+        comment:
+            '“完全属于我”听上去很浪漫，但如果画成动画，我可能会让周围的风突然变紧，树影拉长一点，让观众隐约不安——因为任何想“完全占有”别人的爱，都带着一点阴影。',
+      ),
+    ],
+  ),
+  9: Comment(
+    commentId: 'j3',
+    content:
+        '"Are you in earnest? Do you truly love me? Do you sincerely wish me to be your wife?"',
+    contentIndex: 9,
+    annotations: [
+      Annotation(
+        reviewerId: 'luxun',
+        reviewerName: '鲁迅',
+        reviewerAvatar: '📚',
+        comment:
+            '简·爱三连问，看似重复，其实是对“真诚”的层层追问——不是问一句“你爱不爱我”就完事，而是要确认态度、动机与后果。一个底层孤女，竟能对庄园主提出如此严肃的追问，本身就是对阶级秩序的轻微撼动。',
+      ),
+      Annotation(
+        reviewerId: 'trump',
+        reviewerName: '唐纳德·特朗普',
+        reviewerAvatar: '💼',
+        comment:
+            '这就是一个非常聪明的谈判。她没有立刻答应，而是反问三次，确认对方是不是“认真的投资者”。在商业里也是一样，你要不断确认对方是不是 long-term 的伙伴，而不是来做一笔快进快出的投机买卖。',
+      ),
+      Annotation(
+        reviewerId: 'miyazaki',
+        reviewerName: '宫崎骏',
+        reviewerAvatar: '🎨',
+        comment:
+            '我很喜欢她在月光下这样认真地发问的样子。那不是怀疑，而是一种想和对方一起承担未来的勇气。若画成分镜，我会让两人的影子被月光拉得很长，仿佛未来的路已经悄悄出现在地面上。',
+      ),
+    ],
+  ),
+  14: Comment(
+    commentId: 'j4',
+    content:
+        'The great horse-chestnut ... had been struck by lightning, and half of it split away.',
+    contentIndex: 14,
+    annotations: [
+      Annotation(
+        reviewerId: 'luxun',
+        reviewerName: '鲁迅',
+        reviewerAvatar: '📚',
+        comment:
+            '作者很坦诚地告诉你：这段“幸福”的爱情，命中带着一个裂缝。读者若只看前半夜的甜蜜，而不在意清晨的那棵树，大概就和那些只听口号、不看现实的人一样吧。',
+      ),
+      Annotation(
+        reviewerId: 'trump',
+        reviewerName: '唐纳德·特朗普',
+        reviewerAvatar: '💼',
+        comment:
+            '如果我是罗切斯特的法律顾问，我会在看到这棵树的那一刻说：“先生，我们有风险信号（red flag）了。”自然界都在提醒你：这桩“并购案”可能要出事。可惜，他没听。',
+      ),
+      Annotation(
+        reviewerId: 'miyazaki',
+        reviewerName: '宫崎骏',
+        reviewerAvatar: '🎨',
+        comment:
+            '一棵被劈开的树，是最适合动画分镜的意象之一。它既是灾难，也是重生的起点——树还活着，却从中间裂开，像一个被强行分成两半的命运。等到后来他们真正平等地在一起时，你再回想这棵树，会觉得一切早有伏笔。',
+      ),
+    ],
+  ),
+};
+
 // 分支卡片数据（第五十九回相关）
 final List<BranchCard> branchCards = [
   BranchCard(
@@ -1057,6 +1549,98 @@ final List<Chapter> chapters = [
   ),
 ];
 
+// 《Jane Eyre》节选目录
+final List<Chapter> janeChapters = [
+  Chapter(
+    chapterNumber: 23,
+    title: 'Chapter XXIII  The Proposal / 求婚',
+    aiSummary:
+        '这一章写的是简·爱在花园里意外与罗切斯特先生相遇，并在风声、月光和即将来临的雷雨中完成了一场看似浪漫、实则暗藏危机的求婚。'
+        '罗切斯特多次强调“要你完全属于我”，而简·爱则通过反复追问与理性判断，确认这份感情是否真诚、是否尊重她的人格。'
+        '结尾那棵被雷劈成两半的七叶树，是整部小说中最重要的预兆意象之一——预示着这段婚姻虽已“缔结”，却注定要经历一场撕裂。',
+  ),
+  Chapter(
+    chapterNumber: 24,
+    title: 'Chapter XXIV  The Month of Courtship / 订婚后的时光',
+    aiSummary:
+        '这一章主要描写订婚后简·爱与罗切斯特相处的一个月：他不断用奢侈与宠爱试图“改造”她，而她则坚持保持原本的朴素、自尊与独立，不愿变成一只被圈养的“金丝雀”。'
+        '看似甜蜜的日常中，读者能清晰感到权力与身份的不对等——简·爱在爱中是清醒的，她既渴望被爱，也害怕在“宠爱”中失去自我。'
+        '这一章为后来婚礼前的噩兆埋下心理基础：真正的问题不只在于罗切斯特隐瞒的秘密，也在于这段关系本身是否足够平等。',
+  ),
+  Chapter(
+    chapterNumber: 25,
+    title: 'Chapter XXV  The Omen / 婚礼前的噩兆',
+    aiSummary:
+        '婚礼前夜，简·爱梦见被撕裂的树和废墟般的桑菲尔德，又亲眼看见一个“陌生女人”闯入她的房间、撕碎她的婚纱——现实与梦境交叠成一层层不祥的预兆。'
+        '罗切斯特试图用“你只是太紧张了”来安抚她，但读者早已知道：那些离奇的梦与破坏行为，都是他隐瞒真相的回声。'
+        '这一章通过恐怖气氛与象征性细节，告诉我们：一段建立在隐瞒与不平等上的感情，就算已经走到婚礼门口，也注定要被撕开。',
+  ),
+];
+
 // AI全文概括
 const String fullBookSummary = '《西游记》是一部非常经典的古典小说，主要讲的是唐僧带着三个徒弟去西天取经的故事。一路上他们遇到了很多困难和妖怪，但是都靠着智慧和勇气克服了。这本书不仅故事精彩，还告诉我们很多做人的道理，比如要坚持理想、要团结合作、要分辨是非、要勇敢面对困难等等。整个取经的过程，其实也是师徒四人成长的过程，他们在这个过程中学会了互相理解、互相帮助，最终完成了取经的大业。';
+
+// 《Jane Eyre》节选的“全文”概括（局部视角）
+const String janeFullBookSummary =
+    '《简·爱》是一部讲述孤女如何在不公命运中守住尊严与爱的小说。'
+    '在本次节选的求婚与噩兆篇章中，简·爱终于迎来渴望已久的爱情，却始终保持清醒——'
+    '她在罗切斯特的热烈表白面前，不断确认真诚与平等，不愿用自己的自尊去交换一段不透明的幸福。'
+    '自然景物（盛夏、雷雨、被雷劈开的七叶树）像一面镜子，映照出这段感情表面甜蜜、底层却暗藏裂缝的真相，'
+    '也预告了她日后为了守护自我而选择离开。通过这些细节，小说提醒读者：真正值得追求的爱情，必须建立在人格独立与彼此坦诚之上。';
+
+// 用于 PDF 扫描与封面展示的原文长文本
+const String janeEyreChapter23Text = '''
+Jane Eyre 
+Title: Chapter XXIII
+
+Text:
+
+A splendid Midsummer shone over England: skies so pure, suns so radiant as were then seen in long succession, seldom favour even singly our wave-girt land. It was as if a band of Italian days had come from the South, like a flock of glorious passenger birds, and lighted to rest them on the cliffs of Albion.
+
+I was in the garden. Mr. Rochester had been walking there earlier; I had seen him enter the house. I thought I was safe, and I went down to the orchard. But he was there. He had not gone in. He stood by the wicket, looking at a great moth, a sphinx moth, causing it to flutter.
+
+"Jane, come and look at this fellow," said he.
+
+I obeyed. He looked at me, and I looked at the moth. The trees were laden with ripening fruit; the garden was beautiful.
+
+"You have examined him long enough," said he. "The creature is a real elf. He reminds me of you." He paused, and then added, "Jane, I must have you for my own—entirely my own. Will you be mine? Say yes, quickly."
+
+"Mr. Rochester, let me look at your face: turn to the moonlight."
+
+"Why?"
+
+"Because I want to read your countenance—turn!"
+
+"There! you will find it hardly more legible than a crumpled, scratched page. Read on: only make haste, for I suffer."
+
+His face was very much agitated and very much flushed, and there were strong workings in the features when he turned them to the light.
+
+"Oh, Jane, you torture me!" he exclaimed. "With that searching and yet faithful and generous look, you torture me!"
+
+"How can I do that? If you are true, and your offer real, my only feelings to you must be gratitude and devotion—they cannot torture."
+
+"Gratitude!" he ejaculated; and added wildly—"Jane, accept me quickly. Say, Edward—give me my name—Edward—I will marry you."
+
+"Are you in earnest? Do you truly love me? Do you sincerely wish me to be your wife?"
+
+"I do; and if an oath is necessary to satisfy you, I swear it."
+
+"Then, sir, I will marry you."
+
+"Edward—my little wife!"
+
+"Dear Edward!"
+
+"Come to me—come to me entirely now," said he; and added, in his deepest tone, speaking in my ear as his cheek was laid on mine, "Make my happiness—I will make yours."
+
+"God pardon me!" he subjoined ere long; "and man meddle not with me: I have her, and will hold her."
+
+"There is no one to meddle, sir. I have no kindred to interfere."
+
+"No—that is the best of it," he said.
+
+The wind roared high in the great trees which embowered us; but a mile off, and as far out of the garden, we heard nothing but the soft sighing of the breeze. A bolt of lightning tore the sky, and the thunder crashed. The rain rushed down. We ran to the house.
+
+In the morning, the great horse-chestnut at the bottom of the orchard had been struck by lightning, and half of it split away.
+''';
 

@@ -225,7 +225,7 @@ class _BranchCard extends StatefulWidget {
 }
 
 class _BranchCardState extends State<_BranchCard> {
-  bool _isExpanded = false;
+  bool _showContent = false;
 
   Color _getTagColor() {
     switch (widget.branch.color) {
@@ -251,30 +251,31 @@ class _BranchCardState extends State<_BranchCard> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isExpanded = !_isExpanded;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFF3F4F6)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 假设标题卡片（点击后展开）
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _showContent = !_showContent;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF3F4F6)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+            child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -291,39 +292,119 @@ class _BranchCardState extends State<_BranchCard> {
                     ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.branch.title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                ),
                 Icon(
-                  _isExpanded ? Icons.expand_less : Icons.expand_more,
+                  _showContent ? Icons.expand_less : Icons.expand_more,
                   size: 20,
                   color: Colors.grey[400],
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              widget.branch.title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF111827),
-              ),
-            ),
-            const SizedBox(height: 8),
-            buildFormattedText(
-              _isExpanded 
-                  ? '${widget.branch.content}\n\n【结局分析】：${widget.branch.analysis}'
-                  : widget.branch.content,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[700],
-                height: 1.6,
-              ),
-              maxLines: _isExpanded ? null : 3,
-              overflow: _isExpanded ? null : TextOverflow.ellipsis,
-            ),
-          ],
+          ),
         ),
-      ),
+        // 续写内容卡片（点击后显示）
+        if (_showContent) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_stories,
+                      size: 16,
+                      color: _getTagTextColor(),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'AI续写内容',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _getTagTextColor(),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                buildFormattedText(
+                  widget.branch.content,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[800],
+                    height: 1.7,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.psychology_outlined,
+                            size: 14,
+                            color: _getTagTextColor(),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '结局分析',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _getTagTextColor(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      buildFormattedText(
+                        widget.branch.analysis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

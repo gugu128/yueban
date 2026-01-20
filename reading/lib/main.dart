@@ -91,9 +91,9 @@ class _AppContainerState extends State<AppContainer> {
         return ScanScreen(
           onFinish: () => navigateTo('intent'),
           showDocChooser: isDocChooser,
-          onChooseA: isDocChooser ? () => navigateTo('pdf_reader', pdfPath: 'assets/PDF/paper.pdf') : null,
+          onChooseA: isDocChooser ? () => navigateTo('intent', pdfPath: 'assets/PDF/paper.pdf') : null,
           onChooseB: isDocChooser
-              ? () => navigateTo('pdf_reader', pdfPath: 'assets/PDF/Jane Eyre Selected Chapters.pdf')
+              ? () => navigateTo('intent', pdfPath: 'assets/PDF/Jane Eyre Selected Chapters.pdf')
               : null,
         );
       case 'intent':
@@ -102,11 +102,14 @@ class _AppContainerState extends State<AppContainer> {
         );
       case 'companion':
         return CompanionSelectionScreen(
-          onConfirm: (companions, groupMode) => navigateTo(
-            'reader',
-            companions: companions,
-            groupMode: groupMode,
-          ),
+          onConfirm: (companions, groupMode) {
+            // 如果有 PDF 路径，跳转到 pdf_reader；否则跳转到 reader（西游记）
+            if (pdfAssetPath != null && pdfAssetPath != '__doc_chooser__') {
+              navigateTo('pdf_reader', companions: companions, groupMode: groupMode);
+            } else {
+              navigateTo('reader', companions: companions, groupMode: groupMode);
+            }
+          },
         );
       case 'reader':
         return ReaderScreen(
@@ -114,10 +117,16 @@ class _AppContainerState extends State<AppContainer> {
           selectedCompanions: selectedCompanions,
           isGroupMode: isGroupMode,
           onBack: () => navigateTo('home'),
+          bookId: 'xyj',
         );
       case 'pdf_reader':
+        final path = pdfAssetPath ?? 'assets/PDF/paper.pdf';
+        final bookId =
+            path.contains('Jane Eyre') ? 'jane_eyre' : 'paper';
         return ReaderScreen(
-          pdfAssetPath: pdfAssetPath ?? 'assets/PDF/paper.pdf',
+          intent: selectedIntent,
+          pdfAssetPath: path,
+          bookId: bookId,
           selectedCompanions: selectedCompanions,
           isGroupMode: isGroupMode,
           onBack: () => navigateTo('home'),
