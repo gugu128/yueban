@@ -3,7 +3,9 @@ import 'package:reading/services/demo_data.dart';
 import 'package:reading/utils/text_formatter.dart';
 
 class CreativeTab extends StatefulWidget {
-  const CreativeTab({super.key});
+  final String bookId; // 'xyj' 或 'jane_eyre'
+  
+  const CreativeTab({super.key, this.bookId = 'xyj'});
 
   @override
   State<CreativeTab> createState() => _CreativeTabState();
@@ -88,11 +90,12 @@ class _CreativeTabState extends State<CreativeTab> {
               ],
             ),
             const SizedBox(height: 24),
-            // 分支卡片（使用demo_data中的数据）
-            ...fanficBranches.map((branch) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _BranchCard(branch: branch),
-                )),
+            // 分支卡片（根据bookId选择不同的数据）
+            ...(widget.bookId == 'jane_eyre' ? janeEyreFanficBranches : fanficBranches)
+                .map((branch) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _BranchCard(branch: branch),
+                    )),
             // 自定义生成的分支
             if (_customBranch != null)
               Padding(
@@ -124,7 +127,9 @@ class _CreativeTabState extends State<CreativeTab> {
                       controller: _customInputController,
                       maxLines: 3,
                       decoration: InputDecoration(
-                        hintText: '例如：如果悟空先去找牛魔王...',
+                        hintText: widget.bookId == 'jane_eyre' 
+                            ? '例如：如果简·爱没有离开桑菲尔德...'
+                            : '例如：如果悟空先去找牛魔王...',
                         hintStyle: TextStyle(fontSize: 12, color: Colors.grey[500]),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),

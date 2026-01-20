@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
@@ -39,7 +40,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
   bool showCatalog = false;
   bool showSettings = false; // 显示设置面板
   bool immersiveReading = false; // 沉浸式阅读开关
+  bool wordTranslationMode = false; // 划词翻译模式
   String? selectedQuote; // 最近一次点击的原文
+  Set<String> translatedWords = {}; // 已翻译的单词/短语集合
   String dashboardTargetTab = 'chat'; // 打开工作台时默认落到的 tab
   String? injectedQuote; // 传给工作台的引用文本
   int quoteVersion = 0; // 引用变更序号，保证同样内容也能刷新
@@ -925,6 +928,25 @@ class _ReaderScreenState extends State<ReaderScreen> {
     );
   }
 
+  // 简爱文本的翻译映射（写死）
+  Map<String, String> get _janeEyreTranslations => {
+    'a flock of': '一群',
+    'garden': '花园',
+    'wicket': '小门',
+    'The trees were laden with ripening fruit; the garden was beautiful.': '树上结满了成熟的果实；花园很美。',
+  };
+
+  String? _getTranslation(String text) {
+    if (!_isJaneEyre || !wordTranslationMode) return null;
+    // 检查是否包含需要翻译的词或句子
+    for (var entry in _janeEyreTranslations.entries) {
+      if (text.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+    return null;
+  }
+
   Widget _buildReadingPage(List<BookContent> blocks) {
     final contentBlocks = _activeBookContent
         .where((b) => b.type != 'title' && b.type != 'image_gen')
@@ -953,13 +975,21 @@ class _ReaderScreenState extends State<ReaderScreen> {
               // 找到在bookContent数组中的原始索引
               final originalIndex = _activeBookContent.indexOf(block);
               
+              // 如果是简爱且开启划词翻译模式，使用SelectableText并高亮需要翻译的词
+              if (_isJaneEyre && wordTranslationMode) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: _buildTranslatableText(block, contentIndex, originalIndex),
+                );
+              }
+              
               return GestureDetector(
                 onTapDown: (details) {
                   // 点击：弹出两按钮菜单（AI陪读 / 深度探讨）
                   _handleTextTap(details, block);
                 },
                 onLongPress: () {
-                  // 长按：仅对带下划线且有释义的块弹出释义，避免和“点击菜单”混淆
+                  // 长按：仅对带下划线且有释义的块弹出释义，避免和"点击菜单"混淆
                   if (block.underline && block.explanation != null) {
                     setState(() {
                       showExplanationIndex = contentIndex;
@@ -1014,6 +1044,195 @@ class _ReaderScreenState extends State<ReaderScreen> {
             }).toList(),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTranslatableText(BookContent block, int contentIndex, int originalIndex) {
+    final text = block.content;
+    final List<TextSpan> spans = [];
+    int lastIndex = 0;
+    
+    // 找到所有需要翻译的词和句子（按长度从长到短排序，避免短词匹配到长词的一部分）
+    final sortedEntries = _janeEyreTranslations.entries.toList()
+      ..sort((a, b) => b.key.length.compareTo(a.key.length));
+    
+    // 找到所有需要翻译的位置
+    final List<Map<String, dynamic>> translationRanges = [];
+    for (var entry in sortedEntries) {
+      final key = entry.key;
+      int start = 0;
+      while (start < text.length) {
+        final index = text.indexOf(key, start);
+        if (index == -1) break;
+        
+        // 检查是否与已有范围重叠
+        bool overlaps = false;
+        for (var existing in translationRanges) {
+          final existingStart = existing['start'] as int;
+          final existingEnd = existing['end'] as int;
+          if ((index >= existingStart && index < existingEnd) ||
+              (index + key.length > existingStart && index + key.length <= existingEnd) ||
+              (index < existingStart && index + key.length > existingEnd)) {
+            overlaps = true;
+            break;
+          }
+        }
+        
+        if (!overlaps) {
+          translationRanges.add({
+            'start': index,
+            'end': index + key.length,
+            'text': key,
+            'translation': entry.value,
+          });
+        }
+        
+        start = index + 1;
+      }
+    }
+    
+    // 按位置排序
+    translationRanges.sort((a, b) => (a['start'] as int).compareTo(b['start'] as int));
+    
+    // 构建TextSpan列表
+    for (var range in translationRanges) {
+      final start = range['start'] as int;
+      final end = range['end'] as int;
+      
+      // 添加翻译前的文本
+      if (start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, start),
+          style: TextStyle(
+            fontSize: 17,
+            height: 2.0,
+            color: const Color(0xFF1C1917),
+            fontFamily: 'serif',
+            backgroundColor: block.highlight
+                ? const Color(0xFFFEF3C7).withOpacity(0.8)
+                : Colors.transparent,
+          ),
+        ));
+      }
+      
+      // 添加需要翻译的文本（粉色高亮）
+      spans.add(TextSpan(
+        text: text.substring(start, end),
+        style: TextStyle(
+          fontSize: 17,
+          height: 2.0,
+          color: const Color(0xFF1C1917),
+          fontFamily: 'serif',
+          backgroundColor: const Color(0xFFFCE7F3).withOpacity(0.8), // 粉色荧光笔效果
+          decoration: TextDecoration.underline,
+          decorationColor: const Color(0xFFEC4899),
+          decorationStyle: TextDecorationStyle.solid,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () {
+            _showTranslationDialog(range['text'] as String, range['translation'] as String);
+          },
+      ));
+      
+      lastIndex = end;
+    }
+    
+    // 添加剩余文本
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: TextStyle(
+          fontSize: 17,
+          height: 2.0,
+          color: const Color(0xFF1C1917),
+          fontFamily: 'serif',
+          backgroundColor: block.highlight
+              ? const Color(0xFFFEF3C7).withOpacity(0.8)
+              : Colors.transparent,
+        ),
+      ));
+    }
+    
+    // 如果没有找到需要翻译的内容，直接显示原文本
+    if (spans.isEmpty) {
+      spans.add(TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: 17,
+          height: 2.0,
+          color: const Color(0xFF1C1917),
+          fontFamily: 'serif',
+          backgroundColor: block.highlight
+              ? const Color(0xFFFEF3C7).withOpacity(0.8)
+              : Colors.transparent,
+        ),
+      ));
+    }
+    
+    return SelectableText.rich(
+      TextSpan(children: spans),
+      textAlign: TextAlign.justify,
+    );
+  }
+
+  void _showTranslationDialog(String original, String translation) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.translate, color: Color(0xFFEC4899), size: 20),
+              SizedBox(width: 8),
+              Text('翻译', style: TextStyle(fontSize: 16)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFCE7F3).withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFEC4899).withOpacity(0.3)),
+                ),
+                child: Text(
+                  original,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'serif',
+                    color: Color(0xFF1C1917),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.arrow_downward, size: 16, color: Color(0xFFEC4899)),
+                  const SizedBox(width: 8),
+                  Text(
+                    translation,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFEC4899),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('关闭'),
+            ),
+          ],
         );
       },
     );
@@ -1181,13 +1400,17 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final chapter = catalogChapters[index];
+                        // 简爱选中Chapter XXIII (chapterNumber 23)，西游记选中59
+                        final isSelected = _isJaneEyre 
+                            ? chapter.chapterNumber == 23
+                            : chapter.chapterNumber == 59;
                         return Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF9FAFB),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: chapter.chapterNumber == 59
+                              color: isSelected
                                   ? const Color(0xFF4F46E5)
                                   : const Color(0xFFE5E7EB),
                             ),
@@ -1200,7 +1423,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: chapter.chapterNumber == 59
+                                  color: isSelected
                                       ? const Color(0xFF4F46E5)
                                       : const Color(0xFF111827),
                                 ),
@@ -2050,6 +2273,50 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                   });
                                 },
                                 activeColor: const Color(0xFF4F46E5),
+                              ),
+                            ],
+                          ),
+                          // 划词翻译开关
+                          const SizedBox(height: 18),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      '划词翻译',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF111827),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '开启后，可使用粉色荧光笔划词查看翻译',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Switch(
+                                value: wordTranslationMode,
+                                onChanged: (value) {
+                                  setState(() {
+                                    wordTranslationMode = value;
+                                    if (!value) {
+                                      translatedWords.clear();
+                                    }
+                                  });
+                                },
+                                activeColor: const Color(0xFFEC4899), // 粉色
                               ),
                             ],
                           ),

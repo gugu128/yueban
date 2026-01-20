@@ -98,6 +98,9 @@ class _GraphTabState extends State<GraphTab> {
   Widget _buildNode(GraphNode node, BoxConstraints constraints) {
     final isSelected = selectedNode?.id == node.id;
     
+    // 对于简爱的罗切斯特节点，使用矩形
+    final isJaneEyreRochester = widget.bookId == 'jane_eyre' && node.id == 2;
+    
     // 计算文字宽度，动态调整节点大小
     final textPainter = TextPainter(
       text: TextSpan(
@@ -112,16 +115,28 @@ class _GraphTabState extends State<GraphTab> {
     );
     textPainter.layout();
     
-    // 节点最小直径50，最大90，根据文字长度动态调整
-    final minDiameter = 50.0;
-    final maxDiameter = 90.0;
-    final textWidth = textPainter.width;
-    final padding = 12.0;
-    final nodeDiameter = (textWidth + padding * 2).clamp(minDiameter, maxDiameter);
-    final nodeRadius = nodeDiameter / 2;
+    double nodeWidth, nodeHeight, nodeX, nodeY;
     
-    final nodeX = (node.x / 100) * constraints.maxWidth - nodeRadius;
-    final nodeY = (node.y / 100) * constraints.maxHeight - nodeRadius;
+    if (isJaneEyreRochester) {
+      // 矩形节点：根据文字宽度和高度计算
+      final padding = 10.0;
+      nodeWidth = (textPainter.width + padding * 2).clamp(80.0, 120.0);
+      nodeHeight = (textPainter.height + padding * 2).clamp(40.0, 60.0);
+      nodeX = (node.x / 100) * constraints.maxWidth - nodeWidth / 2;
+      nodeY = (node.y / 100) * constraints.maxHeight - nodeHeight / 2;
+    } else {
+      // 圆形节点：保持原有逻辑
+      final minDiameter = 50.0;
+      final maxDiameter = 90.0;
+      final textWidth = textPainter.width;
+      final padding = 12.0;
+      final nodeDiameter = (textWidth + padding * 2).clamp(minDiameter, maxDiameter);
+      final nodeRadius = nodeDiameter / 2;
+      nodeWidth = nodeDiameter;
+      nodeHeight = nodeDiameter;
+      nodeX = (node.x / 100) * constraints.maxWidth - nodeRadius;
+      nodeY = (node.y / 100) * constraints.maxHeight - nodeRadius;
+    }
 
     return Positioned(
       left: nodeX,
@@ -140,11 +155,12 @@ class _GraphTabState extends State<GraphTab> {
           });
         },
         child: Container(
-          width: nodeDiameter,
-          height: nodeDiameter,
+          width: nodeWidth,
+          height: nodeHeight,
           decoration: BoxDecoration(
             color: _parseColor(node.color).withOpacity(0.85),
-            shape: BoxShape.circle,
+            shape: isJaneEyreRochester ? BoxShape.rectangle : BoxShape.circle,
+            borderRadius: isJaneEyreRochester ? BorderRadius.circular(8) : null,
             border: Border.all(
               color: isSelected
                   ? Colors.white
@@ -161,7 +177,7 @@ class _GraphTabState extends State<GraphTab> {
           ),
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               child: Text(
                 node.label,
                 style: const TextStyle(

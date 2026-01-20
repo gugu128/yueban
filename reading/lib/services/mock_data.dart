@@ -608,10 +608,10 @@ final List<GraphNode> janeGraphNodes = [
   GraphNode(
     id: 2,
     label: '罗切斯特 Mr. Rochester',
-    x: 25,
-    y: 30,
+    x: 15, // 往左上角移动
+    y: 20, // 往左上角移动
     color: '#dc2626',
-    size: 55,
+    size: 50, // 稍微缩小
     avatar: '🕴️',
     description: '桑菲尔德庄园的主人，性格复杂、情绪强烈，对简·爱产生真挚但带有占有欲的爱情。',
     relatedEvents: [
