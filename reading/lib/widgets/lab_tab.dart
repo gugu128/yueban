@@ -4,7 +4,9 @@ import 'package:reading/services/demo_data.dart';
 import 'package:reading/utils/text_formatter.dart';
 
 class LabTab extends StatefulWidget {
-  const LabTab({super.key});
+  final String bookId; // 当前书目：xyj / jane_eyre / paper
+
+  const LabTab({super.key, this.bookId = 'xyj'});
 
   @override
   State<LabTab> createState() => _LabTabState();
@@ -15,8 +17,18 @@ class _LabTabState extends State<LabTab> {
   bool _hasGenerated = false;
   CitationEvidence? _selectedCitation;
 
+  // 根据bookId判断是否是简爱
+  bool get _isJaneEyre => widget.bookId == 'jane_eyre';
+
   // 模拟的引用数据（结合实际内容）
-  final List<CitationEvidence> _citations = [
+  List<CitationEvidence> get _citations {
+    if (_isJaneEyre) {
+      return _janeEyreCitations;
+    }
+    return _xyjCitations;
+  }
+
+  final List<CitationEvidence> _xyjCitations = [
     CitationEvidence(
       index: 1,
       sourceText: '罗刹女见行者厉害，便将芭蕉扇一扇，顿时狂风大作，飞沙走石。行者一时不防，被扇得在空中乱转，如纺车一般，直飘到小须弥山，方才止住。\n\n行者稳住身形，心中暗道："好厉害的扇子！我须得想个法子，定住她。"行者想起灵吉菩萨曾言，此地有个定风丹，可定狂风。\n\n行者便驾云去找灵吉菩萨，求得定风丹，含在口中。再至芭蕉洞，罗刹女见行者又来，大怒，举起芭蕉扇，连扇数下，狂风大作，但行者却如定身一般，毫不动摇。',
@@ -37,17 +49,51 @@ class _LabTabState extends State<LabTab> {
     ),
   ];
 
+  // 简爱的引用数据
+  final List<CitationEvidence> _janeEyreCitations = [
+    CitationEvidence(
+      index: 1,
+      sourceText: '罗切斯特不仅有钱，而且习惯发号施令。他带简去米尔科特，试图用昂贵的丝绸和缎子把她包装起来。简意识到如果接受了全套包装，她就会变成一个"洋娃娃"。她没有全盘拒绝罗切斯特的好意，但她拒绝了昂贵的"丝绸和缎子"，坚持选择了适合自己身份的"朴素的灰色布料"。',
+      pageNumber: 1,
+      paragraphIndex: 1,
+      chapterTitle: 'Chapter XXIV',
+      contentBlockIndex: 1,
+      derivedConclusion: '简拒绝了被定义为"洋娃娃"，坚持选择符合自己身份的"灰色布料"，这体现了她在面对控制时的独立意识。',
+    ),
+    CitationEvidence(
+      index: 2,
+      sourceText: '当罗切斯特因为控制欲受挫而恼火时，简笑着说他像个"苏丹王"，并明确表示自己不会成为他"后宫"的一部分。简不仅是拒绝，更是刻意在两人之间制造一种"为了保持独立而进行的斗争"。',
+      pageNumber: 1,
+      paragraphIndex: 2,
+      chapterTitle: 'Chapter XXIV',
+      contentBlockIndex: 2,
+      derivedConclusion: '简用幽默的方式反击罗切斯特的控制欲，并用"苏丹王"的比喻来维护自己的独立地位，这显示了她在关系中的主动性。',
+    ),
+  ];
+
   @override
   void dispose() {
     _inputController.dispose();
     super.dispose();
   }
 
+  // 获取对应的COT建议数据
+  CotAdvice _getCotAdvice() {
+    if (_isJaneEyre) {
+      return janeEyreCotAdviceData;
+    }
+    return cotAdviceData;
+  }
+
   void _generateAdvice() {
     final text = _inputController.text.trim();
     if (text.isEmpty) {
-      // 如果没有输入，使用默认的示例内容
-      _inputController.text = '最近数学太难了，我爸妈收走了我的手机，我气得和他们大吵一架，现在冷战两天了。我想摆烂，不想复习了。';
+      // 如果没有输入，根据bookId使用不同的默认示例内容
+      if (_isJaneEyre) {
+        _inputController.text = '最近觉得工作很迷茫，不知道要不要跳槽去大城市...';
+      } else {
+        _inputController.text = '最近数学太难了，我爸妈收走了我的手机，我气得和他们大吵一架，现在冷战两天了。我想摆烂，不想复习了。';
+      }
     }
     setState(() {
       _hasGenerated = true;
@@ -199,7 +245,7 @@ class _LabTabState extends State<LabTab> {
                     padding: const EdgeInsets.only(left: 32),
                     child: Column(
                       children: [
-                        ...cotAdviceData.steps.map((step) => _buildCotStep(
+                        ..._getCotAdvice().steps.map((step) => _buildCotStep(
                           step: step.step,
                           title: step.title,
                           content: step.content,
@@ -346,7 +392,7 @@ class _LabTabState extends State<LabTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTextWithCitations('${cotAdviceData.finalAdvice}\n\n参考证据：[1][2]'),
+                        _buildTextWithCitations('${_getCotAdvice().finalAdvice}\n\n参考证据：[1][2]'),
                         const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.all(10),
@@ -365,7 +411,7 @@ class _LabTabState extends State<LabTab> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  '行动指令：${cotAdviceData.actionCommand}',
+                                  '行动指令：${_getCotAdvice().actionCommand}',
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,

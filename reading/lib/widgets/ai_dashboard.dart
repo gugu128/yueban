@@ -229,7 +229,7 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
       case 'graph':
         return GraphTab(bookId: widget.bookId);
       case 'lab':
-        return const LabTab();
+        return LabTab(bookId: widget.bookId);
       case 'create':
         return CreativeTab(bookId: widget.bookId);
       case 'ai_helper':

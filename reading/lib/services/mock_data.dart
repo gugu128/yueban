@@ -593,7 +593,7 @@ final List<GraphNode> janeGraphNodes = [
     id: 1,
     label: '简·爱 Jane Eyre',
     x: 50,
-    y: 50,
+    y: 45, // 往上移动，从50改为45
     color: '#4f46e5',
     size: 60,
     avatar: '📖',

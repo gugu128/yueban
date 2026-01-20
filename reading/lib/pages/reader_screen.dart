@@ -1139,6 +1139,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
+                constraints: const BoxConstraints(
+                  maxWidth: 300, // 限制最大宽度避免溢出
+                ),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFCE7F3).withOpacity(0.3),
@@ -1152,22 +1155,28 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     fontFamily: 'serif',
                     color: Color(0xFF1C1917),
                   ),
+                  softWrap: true,
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Icon(Icons.arrow_downward, size: 16, color: Color(0xFFEC4899)),
-                  const SizedBox(width: 8),
-                  Text(
-                    translation,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFEC4899),
+              Flexible(
+                child: Row(
+                  children: [
+                    const Icon(Icons.arrow_downward, size: 16, color: Color(0xFFEC4899)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        translation,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFEC4899),
+                        ),
+                        softWrap: true,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
