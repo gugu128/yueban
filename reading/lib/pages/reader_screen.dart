@@ -94,6 +94,25 @@ class _ReaderScreenState extends State<ReaderScreen> {
       (widget.pdfAssetPath != null &&
           widget.pdfAssetPath!.contains('Jane Eyre'));
 
+  bool get _isPaper => widget.bookId == 'paper';
+
+  String _getTopBarTitle() {
+    if (_isJaneEyre) {
+      // 显示简爱的第一个章节标题
+      final chapters = _activeChapters;
+      if (chapters.isNotEmpty) {
+        return chapters.first.title;
+      }
+      return 'Jane Eyre';
+    }
+    if (_isPaper) {
+      // 论文模式不显示标题
+      return '';
+    }
+    // 西游记默认标题
+    return '第五十九回 唐三藏路阻火焰山 孙行者一调芭蕉扇';
+  }
+
   List<BookContent> get _activeBookContent {
     if (_isJaneEyre) {
       return janeEyreContent;
@@ -337,12 +356,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-          if (!isListening)
-            const Expanded(
+          if (!isListening && _getTopBarTitle().isNotEmpty)
+            Expanded(
               child: Center(
                 child: Text(
-                  '第五十九回 唐三藏路阻火焰山 孙行者一调芭蕉扇',
-                  style: TextStyle(
+                  _getTopBarTitle(),
+                  style: const TextStyle(
                     fontSize: 12,
                     fontFamily: 'serif',
                     color: Color(0xFF78716C),
@@ -352,6 +371,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 ),
               ),
             )
+          else if (!isListening)
+            const Spacer()
           else
             const Spacer(),
           Row(
