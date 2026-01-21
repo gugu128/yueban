@@ -31,7 +31,7 @@ class ReaderScreen extends StatefulWidget {
   State<ReaderScreen> createState() => _ReaderScreenState();
 }
 
-class _ReaderScreenState extends State<ReaderScreen> {
+class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderStateMixin {
   bool showDashboard = false;
   bool isPlaying = false;
   bool isListening = false; // 听书状态
@@ -62,8 +62,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
   bool _pdfAsText = false; // 是否将 PDF 转为文字阅读
   bool _pdfTextLoading = false;
   List<String> _pdfPageTexts = [];
-  bool _xyjPdfMode = true; // 西游记：默认展示 PDF 文档模式；开启“扫描成文本”后变为现有文本阅读（不改变）
+  bool _xyjPdfMode = true; // 西游记：默认展示 PDF 文档模式；开启"扫描成文本"后变为现有文本阅读（不改变）
   String? _activePdfAsset; // 当前加载到临时文件的 PDF asset 路径
+  late AnimationController _glowController; // 灯泡发光动画控制器
 
   @override
   void initState() {
@@ -71,6 +72,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
     currentRole = widget.selectedCompanions.isNotEmpty ? widget.selectedCompanions.first : roles[0];
     isGroupMode = widget.isGroupMode;
     _pageController = PageController();
+    // 初始化灯泡发光动画控制器
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
     // 模拟读到第3段时，AI生成图片浮现
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
@@ -233,6 +239,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   @override
   void dispose() {
+    _glowController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -1050,7 +1057,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
               
               return GestureDetector(
                 onTapDown: (details) {
-                  // 点击：弹出两按钮菜单（AI陪读 / 深度探讨）
+                  // 点击：弹出两按钮菜单（深度探讨 / 深度探讨）
                   _handleTextTap(details, block);
                 },
                 onLongPress: () {
@@ -1101,6 +1108,25 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               ),
                             ),
                           ),
+                        if (block.url != null && block.url!.isNotEmpty)
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: GestureDetector(
+                              onTap: () => _showImagePreview(block.url!),
+                              child: Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                child: Hero(
+                                  tag: block.url!,
+                                  child: Image.asset(
+                                    block.url!,
+                                    width: 24,
+                                    height: 24,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -1130,6 +1156,27 @@ class _ReaderScreenState extends State<ReaderScreen> {
               ? const Color(0xFFFEF3C7).withOpacity(0.8)
               : Colors.transparent,
         ),
+        children: [
+          if (block.url != null && block.url!.isNotEmpty)
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: GestureDetector(
+                onTap: () => _showImagePreview(block.url!),
+                child: Container(
+                  margin: const EdgeInsets.only(left: 6),
+                  child: Hero(
+                    tag: block.url!,
+                    child: Image.asset(
+                      block.url!,
+                      width: 24,
+                      height: 24,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       textAlign: TextAlign.justify,
       onSelectionChanged: (selection, cause) {
@@ -1506,7 +1553,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildContextMenuItem(Icons.group, 'AI陪读', () {
+              _buildContextMenuItem(Icons.group, '深度探讨', () {
                 setState(() {
                   contextMenu = null;
                   dashboardTargetTab = 'ai_helper';
@@ -1515,15 +1562,15 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   showDashboard = true;
                 });
               }),
-              _buildContextMenuItem(Icons.forum_outlined, '深度探讨', () {
-                setState(() {
-                  contextMenu = null;
-                  dashboardTargetTab = 'deep';
-                  injectedQuote = selectedQuote;
-                  quoteVersion++;
-                  showDashboard = true;
-                });
-              }),
+              // _buildContextMenuItem(Icons.forum_outlined, '深度探讨', () {
+              //   setState(() {
+              //     contextMenu = null;
+              //     dashboardTargetTab = 'deep';
+              //     injectedQuote = selectedQuote;
+              //     quoteVersion++;
+              //     showDashboard = true;
+              //   });
+              // }), // 已注释：原来的深度探讨
             ],
           ),
         ),
@@ -1793,7 +1840,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   Widget _buildFloatingButton() {
     return Positioned(
-      bottom: isListening ? 72 : 32, // 如果正在听书，浮动按钮上移
+      bottom: isListening ? 82 : 42, // 如果正在听书，浮动按钮上移；整体往下移10px
       right: 24,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1813,23 +1860,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF6366F1),
-                    Color(0xFFA855F7),
+                    Color(0xFFFFD700),
+                    Color(0xFFFFA500),
                   ],
                 ),
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6366F1).withOpacity(0.5),
-                    blurRadius: 20,
-                    spreadRadius: 0,
-                  ),
-                ],
               ),
               child: Center(
-                child: const Icon(
-                  Icons.star,
-                  size: 28,
+                child: Icon(
+                  Icons.lightbulb,
+                  size: 22,
                   color: Colors.white,
                 ),
               ),
@@ -1838,6 +1878,31 @@ class _ReaderScreenState extends State<ReaderScreen> {
         ],
       ),
     );
+  }
+
+  // 根据角色ID返回专属的浅色气泡颜色
+  Color _getBubbleColorForRole(String reviewerId) {
+    switch (reviewerId) {
+      case 'trump':
+        return const Color(0xFFFFF4E6); // 浅橙色（特朗普）
+      case 'luxun':
+        return const Color(0xFFF3F4F6); // 浅灰色（鲁迅）
+      case 'miyazaki':
+        return const Color(0xFFE6F7F0); // 浅绿色（宫崎骏）
+      case 'wukong':
+      case 'wukong_reviewer':
+        return const Color(0xFFFFF9E6); // 浅黄色（孙悟空）
+      case 'socrates':
+      case 'socrates_reviewer':
+        return const Color(0xFFF3E8FF); // 浅紫色（苏格拉底）
+      case 'lindaiyu':
+        return const Color(0xFFFFE6F0); // 浅粉色（林黛玉）
+      case 'ai_helper':
+      case 'ai_helper_modern':
+        return const Color(0xFFE6F2FF); // 浅蓝色（AI助手）
+      default:
+        return const Color(0xFFF9FAFB); // 默认浅灰白色
+    }
   }
 
   Widget _buildCommentPanel() {
@@ -1967,60 +2032,71 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                 )
                               else
                                 ...filteredAnnotations.map((annotation) {
-                                  // 聊天气泡样式的伴读评论
+                                  // 根据角色ID获取专属气泡颜色
+                                  Color bubbleColor = _getBubbleColorForRole(annotation.reviewerId);
+                                  
                                   return Padding(
-                                    padding: const EdgeInsets.only(bottom: 16),
+                                    padding: const EdgeInsets.only(bottom: 20),
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         // 头像
-                                        Text(
-                                          annotation.reviewerAvatar,
-                                          style: const TextStyle(fontSize: 26),
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            annotation.reviewerAvatar,
+                                            style: const TextStyle(fontSize: 28),
+                                          ),
                                         ),
-                                        const SizedBox(width: 10),
-                                        // 气泡
-                                        Flexible(
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF3F4FF),
-                                              borderRadius: const BorderRadius.only(
-                                                topLeft: Radius.circular(4),
-                                                topRight: Radius.circular(18),
-                                                bottomLeft: Radius.circular(18),
-                                                bottomRight: Radius.circular(18),
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withOpacity(0.04),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 3),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
+                                        const SizedBox(width: 12),
+                                        // 角色名 + 气泡
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              // 角色名（气泡外）
+                                              Padding(
+                                                padding: const EdgeInsets.only(bottom: 6, left: 4),
+                                                child: Text(
                                                   annotation.reviewerName,
                                                   style: const TextStyle(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Color(0xFF111827),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color(0xFF6B7280),
                                                   ),
                                                 ),
-                                                const SizedBox(height: 6),
-                                                Text(
+                                              ),
+                                              // 聊天气泡
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                                decoration: BoxDecoration(
+                                                  color: bubbleColor,
+                                                  borderRadius: const BorderRadius.only(
+                                                    topLeft: Radius.circular(6),
+                                                    topRight: Radius.circular(20),
+                                                    bottomLeft: Radius.circular(20),
+                                                    bottomRight: Radius.circular(20),
+                                                  ),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withOpacity(0.06),
+                                                      blurRadius: 10,
+                                                      offset: const Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Text(
                                                   annotation.comment,
                                                   style: const TextStyle(
-                                                    fontSize: 13,
+                                                    fontSize: 14,
                                                     height: 1.6,
-                                                    color: Color(0xFF374151),
+                                                    color: Color(0xFF1F2937),
                                                   ),
                                                 ),
-                                              ],
-                                            ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
@@ -2283,7 +2359,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text(
-                                      '沉浸式阅读',
+                                      '开启BGM沉浸式阅读',
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,

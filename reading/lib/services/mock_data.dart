@@ -8,12 +8,15 @@ final List<BookContent> bookContent = [
   ),
   BookContent(
     type: 'text',
+    content: '若干种性本来同，海纳无穷。千思万虑终成妄，般般色色和融。有日功完行满，圆明法性高隆。休教差别走西东，紧锁牢笼。收来安放丹炉内，炼得金乌一样红。',
+  ),
+  BookContent(
+    type: 'text',
     content: '话表三藏遵菩萨教旨，收了行者，与八戒、沙僧剪断二心，锁䤷猿马，同心戮力，赶奔西天。说不尽光阴似箭，日月如梭。历过了夏月炎天，却又值三秋霜景。',
   ),
   BookContent(
     type: 'text',
     content: '但见那：薄云断绝西风紧，鹤鸣远岫霜林锦。光景正苍凉，山长水更长。征鸿来北塞，玄鸟归南陌。客路怯孤单，衲衣容易寒。',
-    underline: true,
     explanation: '这段描写运用了对比手法，通过"薄云断绝"、"鹤鸣远岫"等意象，展现了深秋时节的苍凉景象。"客路怯孤单，衲衣容易寒"则暗示了取经路上的艰辛与孤独。',
   ),
   BookContent(
@@ -35,7 +38,6 @@ final List<BookContent> bookContent = [
   BookContent(
     type: 'text',
     content: '八戒道："哥啊，据你说，不是日落之处，为何这等酷热？"沙僧道："想是天时不正，秋行夏令故也。"他三个正都争讲，只见那路旁有座庄院，乃是红瓦盖的房舍，红砖砌的垣墙，红油门扇，红漆板榻，一片都是红的。',
-    underline: true,
     explanation: '"秋行夏令"指秋天却像夏天一样炎热，暗示异常。"一片都是红的"通过重复"红"字，营造出火焰山附近炽热的环境氛围，为下文做铺垫。',
   ),
   BookContent(
@@ -53,6 +55,7 @@ final List<BookContent> bookContent = [
   BookContent(
     type: 'text',
     content: '那门里忽然走出一个老者，但见他：穿一领黄不黄、红不红的葛布深衣，戴一顶青不青、皂不皂的篾丝凉帽，手中拄一根弯不弯、直不直、暴节竹杖，足下踏一双新不新、旧不旧、挈鞲鞋。',
+    url: 'assets/images/man.png', // 小图片路径
   ),
   BookContent(
     type: 'text',

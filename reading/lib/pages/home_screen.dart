@@ -534,6 +534,155 @@ class _BookCard extends StatelessWidget {
     }
   }
 
+  // 根据书名生成装饰性图案
+  List<Widget> _buildDecorativePatterns(String title, bool isDark) {
+    final patterns = <Widget>[];
+    final opacity = isDark ? 0.15 : 0.08;
+    final iconOpacity = isDark ? 0.2 : 0.12;
+    
+    if (title.contains('西游记')) {
+      // 西游记：古典风格装饰
+      patterns.addAll([
+        Positioned(
+          right: -20,
+          top: -20,
+          child: Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(opacity),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          right: 8,
+          top: 8,
+          child: Icon(
+            Icons.cloud_outlined,
+            size: 32,
+            color: Colors.white.withOpacity(iconOpacity),
+          ),
+        ),
+        Positioned(
+          left: -15,
+          bottom: -15,
+          child: Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(opacity * 0.7),
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 12,
+          bottom: 12,
+          child: Icon(
+            Icons.landscape_outlined,
+            size: 28,
+            color: Colors.white.withOpacity(iconOpacity),
+          ),
+        ),
+      ]);
+    } else if (title.contains('简爱') || title.contains('Jane')) {
+      // 简爱：优雅风格装饰
+      patterns.addAll([
+        Positioned(
+          right: -18,
+          top: -18,
+          child: Container(
+            width: 85,
+            height: 85,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(opacity),
+              borderRadius: BorderRadius.circular(24),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 10,
+          top: 10,
+          child: Icon(
+            Icons.local_florist_outlined,
+            size: 30,
+            color: Colors.white.withOpacity(iconOpacity),
+          ),
+        ),
+        Positioned(
+          left: -20,
+          bottom: -20,
+          child: Container(
+            width: 75,
+            height: 75,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(opacity * 0.8),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          left: 8,
+          bottom: 8,
+          child: Icon(
+            Icons.auto_awesome_outlined,
+            size: 26,
+            color: Colors.white.withOpacity(iconOpacity),
+          ),
+        ),
+      ]);
+    } else {
+      // 其他书籍：简洁风格装饰
+      patterns.addAll([
+        Positioned(
+          right: -22,
+          top: -22,
+          child: Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(opacity),
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 6,
+          top: 6,
+          child: Icon(
+            Icons.chat_bubble_outline,
+            size: 34,
+            color: Colors.white.withOpacity(iconOpacity),
+          ),
+        ),
+        Positioned(
+          left: -16,
+          bottom: -16,
+          child: Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(opacity * 0.75),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          left: 10,
+          bottom: 10,
+          child: Icon(
+            Icons.favorite_outline,
+            size: 24,
+            color: Colors.white.withOpacity(iconOpacity),
+          ),
+        ),
+      ]);
+    }
+    
+    return patterns;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bgColor = _getColor();
@@ -561,31 +710,8 @@ class _BookCard extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // 装饰图形
-            Positioned(
-              right: -24,
-              top: -24,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-            Positioned(
-              left: -18,
-              bottom: -18,
-              child: Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-            ),
+            // 装饰图形 - 根据书名生成不同图案
+            ..._buildDecorativePatterns(book.title, isDark),
             Padding(
               padding: const EdgeInsets.all(18),
               child: Column(
@@ -595,28 +721,12 @@ class _BookCard extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          'AI 伴读精选',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.grey[200] : const Color(0xFF4F46E5),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
                       Text(
                         book.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.w800,
                           height: 1.3,
                           color: isDark ? Colors.white : const Color(0xFF111827),

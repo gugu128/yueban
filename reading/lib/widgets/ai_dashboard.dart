@@ -168,8 +168,8 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
   Widget _buildTabBar() {
       final tabs = [
         {'id': 'chat', 'label': '伴读', 'icon': Icons.message_outlined},
-        {'id': 'ai_helper', 'label': 'AI陪读', 'icon': Icons.smart_toy_outlined},
-        {'id': 'deep', 'label': '深度探讨', 'icon': Icons.psychology_alt_outlined},
+        {'id': 'ai_helper', 'label': '深度探讨', 'icon': Icons.smart_toy_outlined},
+        // {'id': 'deep', 'label': '深度探讨', 'icon': Icons.psychology_alt_outlined}, // 已注释：原来的深度探讨
         {'id': 'graph', 'label': '图谱', 'icon': Icons.account_tree},
         {'id': 'lab', 'label': '实验室', 'icon': Icons.work_outline},
         {'id': 'create', 'label': '番外', 'icon': Icons.call_split},
@@ -265,11 +265,11 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
           quoteVersion: lastQuoteVersion,
           bookId: widget.bookId,
         );
-      case 'deep':
-        return DeepDiveTab(
-          injectedQuote: pendingQuote,
-          quoteVersion: lastQuoteVersion,
-        );
+      // case 'deep':
+      //   return DeepDiveTab(
+      //     injectedQuote: pendingQuote,
+      //     quoteVersion: lastQuoteVersion,
+      //   );
       default:
         return const SizedBox.shrink();
     }
@@ -305,10 +305,10 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     super.initState();
     _messages = [
       _SimpleMessage(
-        sender: 'AI小伴读',
+        sender: 'AI深度探讨',
         content: widget.bookId == 'paper' 
-            ? '你好，我是AI陪读小助手。'
-            : '你好，我是 AI 陪读。引用任意原文句子并发问，我会结合引用快速解释。',
+            ? '你好，我是深度探讨小助手。'
+            : '你好，我是深度探讨。引用任意原文句子并发问，我会结合引用快速解释。',
       ),
     ];
   }
@@ -329,7 +329,7 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
       // 提示已插入引用
       setState(() {
         _messages.add(_SimpleMessage(
-          sender: 'AI小伴读',
+          sender: 'AI深度探讨',
           content: '已插入你刚才选中的原文，将随之后的提问一起发送。',
           quote: widget.injectedQuote,
         ));
@@ -372,7 +372,7 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     setState(() {
       _messages.add(_SimpleMessage(sender: '我', content: text, quote: quote, isUser: true));
       _messages.add(_SimpleMessage(
-        sender: 'AI小伴读',
+        sender: 'AI深度探讨',
         content: _aiReply(text, quote),
         quote: quote,
         citationIndex: quote == null || quote.isEmpty ? null : _nextCitationIndex++,
@@ -381,7 +381,7 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     _inputController.clear();
   }
   
-  // Cartoon模式：获取AI陪读关于漫画深意的回答
+  // Cartoon模式：获取深度探讨关于漫画深意的回答
   _SimpleMessage? _getCartoonReply(String userInput) {
     String normalize(String s) => s.replaceAll('"', '').replaceAll('"', '').replaceAll('：', ':').trim().toLowerCase();
     final normalized = normalize(userInput);
@@ -392,7 +392,7 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     
     if (matchedCount >= 2 || normalized.contains('漫画') && (normalized.contains('深意') || normalized.contains('意思'))) {
       return _SimpleMessage(
-        sender: 'AI小伴读',
+        sender: 'AI深度探讨',
         content: '这幅漫画具有很强的讽刺意味，深刻揭示了社交媒体时代下人类情感（尤其是悲伤）的异化与表演性。\n\n以下是它的几层深意：\n\n1. 悲伤的"表演化"与"变现" (Performative Grief)\n漫画的上半部分是一个庄重的场景：一个人在悼念逝者，这是人类最私密、最痛苦的时刻之一。然而，这一切是建立在下半部分——巨大的"点赞（Like）"手势之上的。\n这暗示了现代人的一种怪象：如果不发到朋友圈获得点赞，哀悼似乎就无法完成。\n人们把葬礼、痛苦和告别变成了社交媒体上的"内容"，潜意识里希望通过展示悲伤来获取他人的关注、同情和网络流量。\n\n2. 情感的廉价化 (Trivialization of Emotion)\n"点赞"这个手势通常代表"喜欢"、"同意"或"真棒"。用这样一个积极、轻松甚至娱乐化的符号去支撑一个代表死亡和沉痛的墓碑，形成了一种强烈的荒诞感。\n它讽刺了社交网络上互动的肤浅——对他人的巨大悲剧，旁观者往往只需要动动手指点一个"赞"或"蜡烛"表情。这种廉价的互动消解了死亡的严肃性。\n\n3. 存在感的依赖 (Validation of Existence)\n这幅画的构图很有意思：地面是由"点赞"的大拇指托举起来的。这隐喻了数字时代的生存逻辑——我们的生活经历（哪怕是死亡），似乎只有被网络数据（点赞数）支撑时，才具有了"真实性"和"重量"。如果没有人点赞，这种悲伤仿佛就没有立足之地。\n\n4. 隐藏的动机\n地面之上的悲伤是显性的（看得见的），而地下的"点赞"是隐性的（深埋的）。这可能在讽刺当事人内心深处不自知的动机：表面上是在缅怀逝者，根基上却是在寻求社交满足感。',
       );
     }
@@ -488,13 +488,13 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     ];
     
     if (questionIndex >= answers.length) return _SimpleMessage(
-      sender: 'AI小伴读',
+      sender: 'AI深度探讨',
       content: '所有预设问题已回答完毕。',
     );
     
     final answer = answers[questionIndex];
     return _SimpleMessage(
-      sender: 'AI小伴读',
+      sender: 'AI深度探讨',
       content: answer['content'] as String,
       citationIndices: answer['citations'] as List<int>,
       citationDetails: answer['citationDetails'] as Map<int, String>,
@@ -594,7 +594,7 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('AI陪读', '即时问答 · 可多次引用不同段落'),
+        _sectionHeader('深度探讨', '即时问答 · 可多次引用不同段落'),
         _quoteBox(
           controller: _quoteController,
           label: '当前引用（仅支持从正文点击自动带入）',
@@ -629,12 +629,14 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
       context: context,
       message: message,
       title: citationIndices.length == 1 
-          ? 'AI陪读 · 精准溯源 [${citationIndices.first}]'
-          : 'AI陪读 · 精准溯源 [${citationIndices.join('][')}]',
+          ? '深度探讨 · 精准溯源 [${citationIndices.first}]'
+          : '深度探讨 · 精准溯源 [${citationIndices.join('][')}]',
     );
   }
 }
 
+// 已注释：原来的深度探讨功能
+/*
 class DeepDiveTab extends StatefulWidget {
   final String? injectedQuote;
   final int quoteVersion;
@@ -655,7 +657,7 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
   final List<_SimpleMessage> _messages = [
     _SimpleMessage(
       sender: 'AI深度探讨',
-      content: '先指定一个段落，我会围绕它持续追问与拆解。要换观点，点“开启新的深度探讨”。',
+      content: '先指定一个段落，我会围绕它持续追问与拆解。要换观点，点"开启新的深度探讨"。',
     ),
   ];
   String? _activeQuote;
@@ -715,21 +717,21 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
   }
 
   String _deepReply(String user, String quote) {
-    String normalize(String s) => s.replaceAll('“', '').replaceAll('”', '').replaceAll('：', ':').trim();
+    String normalize(String s) => s.replaceAll('"', '').replaceAll('"', '').replaceAll('：', ':').trim();
     final nq = normalize(quote);
     final nu = normalize(user);
     final isPoem1 = nq.contains('薄云断绝西风紧') || nq.contains('鹤鸣远岫霜林锦') || nq.contains('山长水更长');
     final isOldMan = nq.contains('穿一领黄不黄') || nq.contains('红不红的葛布深衣') || nq.contains('篾丝凉帽') || nq.contains('暴节竹杖');
 
     if (isPoem1) {
-      return '引用段落：$quote\n\n我先抛 3 个问题引导你思考（你可以逐个答）：\n1) **情绪从哪来**：你觉得“冷”主要来自天气（西风/霜林）还是来自处境（客路孤单/衲衣易寒）？\n2) **镜头怎么走**：这段从“天象”写到“飞鸟”再落到“人”，这种推进对你有什么阅读感受？\n3) **叙事功能**：如果把这段删掉，后面的“行路/遭遇”会少掉什么？\n\n我的示范答案（供你对照）：它用景物把“孤旅与苍凉”提前灌进读者心里，让后续剧情更有重量。\n\n你刚才说：「$nu」——你更同意第 1 点（情绪）还是第 3 点（功能）？';
+      return '引用段落：$quote\n\n我先抛 3 个问题引导你思考（你可以逐个答）：\n1) **情绪从哪来**：你觉得"冷"主要来自天气（西风/霜林）还是来自处境（客路孤单/衲衣易寒）？\n2) **镜头怎么走**：这段从"天象"写到"飞鸟"再落到"人"，这种推进对你有什么阅读感受？\n3) **叙事功能**：如果把这段删掉，后面的"行路/遭遇"会少掉什么？\n\n我的示范答案（供你对照）：它用景物把"孤旅与苍凉"提前灌进读者心里，让后续剧情更有重量。\n\n你刚才说：「$nu」——你更同意第 1 点（情绪）还是第 3 点（功能）？';
     }
 
     if (isOldMan) {
-      return '引用段落：$quote\n\n引导问题（你选 1-2 个回答）：\n1) **叠词的效果**：反复“X不X”让你感觉这个人更真实，还是更神秘？为什么？\n2) **身份猜测**：仅凭衣帽器物的“不正”“不齐”，你会把他归为哪一类人（贫寒/行旅/隐士/怪人）？\n3) **作者动机**：作者为什么不直接说“衣服旧、帽子旧”，而要绕这么一圈？\n\n我的示范答案：这种写法像“打灯”，用不确定性把人物照得更立体，也顺便吊起读者的好奇，给后文埋钩子。\n\n你刚才说：「$nu」——你更想从“写法技巧”聊，还是从“剧情作用”聊？';
+      return '引用段落：$quote\n\n引导问题（你选 1-2 个回答）：\n1) **叠词的效果**：反复"X不X"让你感觉这个人更真实，还是更神秘？为什么？\n2) **身份猜测**：仅凭衣帽器物的"不正""不齐"，你会把他归为哪一类人（贫寒/行旅/隐士/怪人）？\n3) **作者动机**：作者为什么不直接说"衣服旧、帽子旧"，而要绕这么一圈？\n\n我的示范答案：这种写法像"打灯"，用不确定性把人物照得更立体，也顺便吊起读者的好奇，给后文埋钩子。\n\n你刚才说：「$nu」——你更想从"写法技巧"聊，还是从"剧情作用"聊？';
     }
 
-    return '引用段落：$quote\n\n我会按“文本细节 → 作者选择 → 读者感受 → 情节/主题作用”来带你。\n\n先问你 2 个问题：\n1) 这段里你觉得最关键的一个词/一句是哪一个？为什么？\n2) 你读完的第一情绪是：紧张/悲凉/好笑/敬畏/别的？\n\n我的初步解读：这段很可能在用细节（意象/动作/口吻）塑造人物或铺垫冲突。\n\n你先回答第 1 个问题，我再顺着你的答案继续追问并给出对应分析。';
+    return '引用段落：$quote\n\n我会按"文本细节 → 作者选择 → 读者感受 → 情节/主题作用"来带你。\n\n先问你 2 个问题：\n1) 这段里你觉得最关键的一个词/一句是哪一个？为什么？\n2) 你读完的第一情绪是：紧张/悲凉/好笑/敬畏/别的？\n\n我的初步解读：这段很可能在用细节（意象/动作/口吻）塑造人物或铺垫冲突。\n\n你先回答第 1 个问题，我再顺着你的答案继续追问并给出对应分析。';
   }
 
   @override
@@ -737,10 +739,10 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('深度探讨', '从正文点“深度探讨”后，我会围绕该段持续追问'),
+        _sectionHeader('深度探讨', '从正文点"深度探讨"后，我会围绕该段持续追问'),
         _quoteBox(
           controller: _quoteController,
-          label: '要探讨的段落/观点（仅支持从正文点击“深度探讨”自动带入）',
+          label: '要探讨的段落/观点（仅支持从正文点击"深度探讨"自动带入）',
           readOnly: true,
         ),
         Padding(
@@ -792,6 +794,7 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
     );
   }
 }
+*/
 
 class _SimpleMessage {
   final String sender;
