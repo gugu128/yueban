@@ -17,6 +17,7 @@ class GraphTab extends StatefulWidget {
 class _GraphTabState extends State<GraphTab> {
   GraphNode? selectedNode;
   GraphRelation? selectedRelation;
+  bool showKnowledgeGraph = false;
 
   @override
   Widget build(BuildContext context) {
@@ -56,54 +57,126 @@ class _GraphTabState extends State<GraphTab> {
       );
     }
 
-    final nodes =
-        widget.bookId == 'jane_eyre' ? janeGraphNodes : graphNodes;
-    final relations =
-        widget.bookId == 'jane_eyre' ? janeGraphRelations : graphRelations;
+    final useKnowledge = showKnowledgeGraph;
+    final isJane = widget.bookId == 'jane_eyre';
+    final isXyj = widget.bookId == 'xyj';
+    final hasKnowledge = isJane || isXyj;
+
+    final nodes = useKnowledge
+        ? (isJane ? janeKnowledgeGraphNodes : xyjKnowledgeGraphNodes)
+        : (isJane ? janeGraphNodes : graphNodes);
+    final relations = useKnowledge
+        ? (isJane ? janeKnowledgeGraphRelations : xyjKnowledgeGraphRelations)
+        : (isJane ? janeGraphRelations : graphRelations);
 
     return Container(
       color: const Color(0xFF0F172A), // slate-900
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
+
+          final graphCanvas = SizedBox(
+            width: canvasSize.width,
+            height: canvasSize.height,
+            child: Stack(
+              children: [
+                // 连线
+                CustomPaint(
+                  size: canvasSize,
+                  painter: GraphLinesPainter(
+                    relations: relations,
+                    nodes: nodes,
+                    constraints: constraints,
+                    selectedRelation: selectedRelation,
+                  ),
+                ),
+                // 节点
+                ...nodes.map((node) => _buildNode(node, constraints)),
+              ],
+            ),
+          );
+
           return Stack(
             children: [
-              // 连线
-              CustomPaint(
-                size: constraints.biggest,
-                painter: GraphLinesPainter(
-                  relations: relations,
-                  nodes: nodes,
-                  constraints: constraints,
-                  selectedRelation: selectedRelation,
+              // 可缩放/拖拽画布
+              Positioned.fill(
+                child: InteractiveViewer(
+                  boundaryMargin: const EdgeInsets.all(120),
+                  minScale: 0.65,
+                  maxScale: 2.0,
+                  child: graphCanvas,
                 ),
               ),
-              // 节点
-              ...nodes.map((node) => _buildNode(node, constraints)),
-              // 标题
+              // 顶部标题与开关
               Positioned(
-                top: 16,
-                left: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.account_tree, size: 12, color: Colors.white),
-                      const SizedBox(width: 6),
-                      const Text(
-                        '实体关系网',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
+                top: 12,
+                left: 12,
+                right: 12,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.45),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.08)),
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.account_tree, size: 12, color: Colors.white),
+                          const SizedBox(width: 6),
+                          Text(
+                            useKnowledge ? '知识图谱 · 情节关联' : '人物关系网',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.35),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white.withOpacity(0.06)),
+                      ),
+                      child: Row(
+                        children: [
+                          _GraphToggleChip(
+                            label: '人物关系',
+                            selected: !useKnowledge,
+                            onTap: () {
+                              setState(() {
+                                showKnowledgeGraph = false;
+                                selectedNode = null;
+                                selectedRelation = null;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                          _GraphToggleChip(
+                            label: '知识图谱',
+                            selected: useKnowledge,
+                            disabled: !hasKnowledge,
+                            onTap: hasKnowledge
+                                ? () {
+                                    setState(() {
+                                      showKnowledgeGraph = true;
+                                      selectedNode = null;
+                                      selectedRelation = null;
+                                    });
+                                  }
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               // 交互提示
@@ -113,7 +186,9 @@ class _GraphTabState extends State<GraphTab> {
                 right: 0,
                 child: Center(
                   child: Text(
-                    '点击节点查看详情 · 拖拽节点查看人物生平 · 双指缩放全览',
+                    useKnowledge
+                        ? '双指缩放 / 拖动画布 · 点击节点查看情节摘要'
+                        : '双指缩放 / 拖动画布 · 点击节点查看人物生平',
                     style: TextStyle(
                       fontSize: 10,
                       color: Colors.grey[400],
@@ -122,7 +197,7 @@ class _GraphTabState extends State<GraphTab> {
                 ),
               ),
               // 节点详情弹窗
-              if (selectedNode != null) 
+              if (selectedNode != null)
                 _buildNodeDetailDialog(constraints),
             ],
           );
@@ -404,6 +479,72 @@ class _GraphTabState extends State<GraphTab> {
 
   Color _parseColor(String hex) {
     return Color(int.parse(hex.replaceFirst('#', '0xFF')));
+  }
+}
+
+class _GraphToggleChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final bool disabled;
+  final VoidCallback? onTap;
+
+  const _GraphToggleChip({
+    required this.label,
+    required this.selected,
+    this.onTap,
+    this.disabled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isClickable = onTap != null && !disabled;
+    return GestureDetector(
+      onTap: isClickable ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: disabled
+              ? Colors.grey.withOpacity(0.18)
+              : (selected ? const Color(0xFF4F46E5) : Colors.white.withOpacity(0.08)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF818CF8)
+                : Colors.white.withOpacity(disabled ? 0.05 : 0.12),
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF4F46E5).withOpacity(0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selected)
+              const Padding(
+                padding: EdgeInsets.only(right: 6),
+                child: Icon(Icons.check, size: 14, color: Colors.white),
+              ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: disabled
+                    ? Colors.grey[400]
+                    : (selected ? Colors.white : Colors.white.withOpacity(0.9)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

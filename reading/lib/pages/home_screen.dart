@@ -80,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              '今日宜：深度阅读',
+              '欢迎来到"阅伴"！今日宜：深度阅读',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -156,23 +156,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            '核心底座',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
                         const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -258,34 +243,38 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              '最近上传文件',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF111827),
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '最近上传文件',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF111827),
+                ),
               ),
-            ),
-            Text(
-              '查看全部',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[400],
+              Text(
+                '查看全部',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Expanded(
           child: GridView.builder(
+            padding: EdgeInsets.zero,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.85,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.8,
             ),
             itemCount: recentBooks.length,
             itemBuilder: (context, index) {
@@ -535,11 +524,11 @@ class _BookCard extends StatelessWidget {
   Color _getColor() {
     switch (book.colorClass) {
       case 'emerald':
-        return const Color(0xFFD1FAE5);
+        return const Color(0xFFDCFCE7);
       case 'orange':
-        return const Color(0xFFFED7AA);
+        return const Color(0xFFFFEDD5);
       case 'slate':
-        return const Color(0xFF1E293B);
+        return const Color(0xFF0F172A);
       default:
         return Colors.grey[100]!;
     }
@@ -550,32 +539,131 @@ class _BookCard extends StatelessWidget {
     final bgColor = _getColor();
     final isDark = book.dark;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              bgColor,
+              isDark ? const Color(0xFF020617) : Colors.white,
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            book.title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF111827),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Stack(
+          children: [
+            // 装饰图形
+            Positioned(
+              right: -24,
+              top: -24,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              left: -18,
+              bottom: -18,
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          'AI 伴读精选',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.grey[200] : const Color(0xFF4F46E5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        book.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          height: 1.3,
+                          color: isDark ? Colors.white : const Color(0xFF111827),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.menu_book_rounded,
+                            size: 16,
+                            color: isDark ? Colors.grey[300] : const Color(0xFF6B7280),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '继续阅读',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.grey[300] : const Color(0xFF6B7280),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.12) : const Color(0xFF4F46E5),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

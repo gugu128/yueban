@@ -253,11 +253,15 @@ class _IntentScreenState extends State<IntentScreen> {
           ),
           const SizedBox(height: 16),
           // 开始按钮（在收到AI回复后或选择了意图后可用）
+          // 即使没有选择意图卡片，只要用户有输入并收到AI回复，就可以点击
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: (_hasReceivedReply || selectedIntent != null)
-                  ? () => widget.onConfirm(selectedIntent ?? 'fun')
+                  ? () {
+                      // 如果没有选择意图，使用默认的'fun'（休闲娱乐）
+                      widget.onConfirm(selectedIntent ?? 'fun');
+                    }
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4F46E5),

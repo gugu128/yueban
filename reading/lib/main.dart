@@ -103,6 +103,11 @@ class _AppContainerState extends State<AppContainer> {
         );
       case 'companion':
         return CompanionSelectionScreen(
+          bookId: pdfAssetPath == '__cartoon__'
+              ? 'cartoon'
+              : (pdfAssetPath != null && pdfAssetPath != '__doc_chooser__'
+                  ? (pdfAssetPath!.contains('Jane Eyre') ? 'jane_eyre' : 'paper')
+                  : 'xyj'),
           onConfirm: (companions, groupMode) {
             // 如果是cartoon模式，跳转到cartoon_reader
             if (pdfAssetPath == '__cartoon__') {

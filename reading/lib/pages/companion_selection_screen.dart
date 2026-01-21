@@ -4,8 +4,13 @@ import 'package:reading/models/book_content.dart';
 
 class CompanionSelectionScreen extends StatefulWidget {
   final Function(List<Role>, bool isGroupMode) onConfirm;
+  final String bookId;
 
-  const CompanionSelectionScreen({super.key, required this.onConfirm});
+  const CompanionSelectionScreen({
+    super.key,
+    required this.onConfirm,
+    this.bookId = 'xyj',
+  });
 
   @override
   State<CompanionSelectionScreen> createState() => _CompanionSelectionScreenState();
@@ -13,6 +18,34 @@ class CompanionSelectionScreen extends StatefulWidget {
 
 class _CompanionSelectionScreenState extends State<CompanionSelectionScreen> {
   final Set<String> selectedRoleIds = {};
+  bool _showRecommendationHint = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _autoSelectRecommendedRoles();
+  }
+
+  void _autoSelectRecommendedRoles() {
+    // 简单基于书目做预设推荐，可按需要调整
+    List<String> ids;
+    switch (widget.bookId) {
+      case 'jane_eyre':
+        ids = ['luxun', 'socrates_reviewer', 'ai_helper_modern'];
+        break;
+      case 'paper':
+        ids = ['ai_helper_modern', 'socrates_reviewer', 'trump'];
+        break;
+      case 'cartoon':
+        ids = ['miyazaki', 'ai_helper_modern', 'lindaiyu'];
+        break;
+      default: // 'xyj' 等
+        ids = ['wukong_reviewer', 'luxun', 'ai_helper_modern'];
+    }
+    selectedRoleIds
+      ..clear()
+      ..addAll(ids.where((id) => allCompanionRoles.any((r) => r.id == id)).take(3));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,12 +65,37 @@ class _CompanionSelectionScreenState extends State<CompanionSelectionScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            '最多选择3个角色',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _showRecommendationHint
+                      ? '已根据本次阅读内容为你优选 3 位伴读角色，可直接开始，或点「取消选择」自行挑选。'
+                      : '最多选择 3 个角色，你也可以自由组合自己的伴读阵容。',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              if (selectedRoleIds.isNotEmpty)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      selectedRoleIds.clear();
+                      _showRecommendationHint = false;
+                    });
+                  },
+                  child: const Text(
+                    '取消选择',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 24),
           // 角色网格

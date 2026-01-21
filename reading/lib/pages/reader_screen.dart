@@ -1967,43 +1967,60 @@ class _ReaderScreenState extends State<ReaderScreen> {
                                 )
                               else
                                 ...filteredAnnotations.map((annotation) {
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 16),
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF9FAFB),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: const Color(0xFFE5E7EB),
-                                      ),
-                                    ),
-                                    child: Column(
+                                  // 聊天气泡样式的伴读评论
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              annotation.reviewerAvatar,
-                                              style: const TextStyle(fontSize: 24),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              annotation.reviewerName,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF111827),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
+                                        // 头像
                                         Text(
-                                          annotation.comment,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            height: 1.6,
-                                            color: Color(0xFF374151),
+                                          annotation.reviewerAvatar,
+                                          style: const TextStyle(fontSize: 26),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        // 气泡
+                                        Flexible(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF3F4FF),
+                                              borderRadius: const BorderRadius.only(
+                                                topLeft: Radius.circular(4),
+                                                topRight: Radius.circular(18),
+                                                bottomLeft: Radius.circular(18),
+                                                bottomRight: Radius.circular(18),
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.04),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 3),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  annotation.reviewerName,
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Color(0xFF111827),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  annotation.comment,
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    height: 1.6,
+                                                    color: Color(0xFF374151),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -2085,7 +2102,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               Icon(Icons.info_outline, size: 18, color: Color(0xFF6366F1)),
                               SizedBox(width: 8),
                               Text(
-                                '释义',
+                                'AI阅读笔记',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -2114,28 +2131,55 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 标记文本
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              margin: const EdgeInsets.only(bottom: 16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEF2FF).withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFF6366F1),
-                                  width: 1,
+                            // 原文
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 6),
+                                  child: Text(
+                                    '原文',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF6B7280),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF2FF).withOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: const Color(0xFF6366F1),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    block.content,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF6366F1),
+                                      fontFamily: 'serif',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // AI 阅读笔记
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 6),
                               child: Text(
-                                block.content,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF6366F1),
-                                  fontFamily: 'serif',
+                                'AI阅读笔记',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF6B7280),
                                 ),
                               ),
                             ),
-                            // 释义
                             Text(
                               block.explanation!,
                               style: const TextStyle(
