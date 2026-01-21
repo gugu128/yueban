@@ -48,11 +48,7 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    // 检查初始tab是否可用
-    final isCartoon = widget.bookId == 'cartoon';
-    final disabledTabs = isCartoon ? ['graph', 'lab', 'create'] : [];
-    final initialTab = widget.injectedTab;
-    activeTab = disabledTabs.contains(initialTab) ? 'chat' : initialTab;
+    activeTab = widget.injectedTab;
     pendingQuote = widget.injectedQuote;
     lastQuoteVersion = widget.quoteVersion;
     _controller = AnimationController(
@@ -76,22 +72,10 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
   @override
   void didUpdateWidget(AIDashboard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 检查bookId变化，如果变成cartoon且当前tab被禁用，切换到第一个可用tab
-    if (widget.bookId != oldWidget.bookId) {
-      final isCartoon = widget.bookId == 'cartoon';
-      final disabledTabs = isCartoon ? ['graph', 'lab', 'create'] : [];
-      if (disabledTabs.contains(activeTab)) {
-        activeTab = 'chat';
-      }
-    }
-    // 只有当父组件"明确注入的 tab"发生变化时，才强制切换；
+    // 只有当父组件“明确注入的 tab”发生变化时，才强制切换；
     // 避免键盘弹出等导致父组件 rebuild 时把用户手动切到的 tab 又切回去。
     if (widget.injectedTab != oldWidget.injectedTab && widget.injectedTab != activeTab) {
-      final isCartoon = widget.bookId == 'cartoon';
-      final disabledTabs = isCartoon ? ['graph', 'lab', 'create'] : [];
-      if (!disabledTabs.contains(widget.injectedTab)) {
-        activeTab = widget.injectedTab;
-      }
+      activeTab = widget.injectedTab;
     }
     if (widget.quoteVersion != lastQuoteVersion) {
       lastQuoteVersion = widget.quoteVersion;
@@ -168,16 +152,12 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
   Widget _buildTabBar() {
       final tabs = [
         {'id': 'chat', 'label': '伴读', 'icon': Icons.message_outlined},
-        {'id': 'ai_helper', 'label': '深度探讨', 'icon': Icons.smart_toy_outlined},
-        // {'id': 'deep', 'label': '深度探讨', 'icon': Icons.psychology_alt_outlined}, // 已注释：原来的深度探讨
+        {'id': 'ai_helper', 'label': 'AI陪读', 'icon': Icons.smart_toy_outlined},
+        {'id': 'deep', 'label': '深度探讨', 'icon': Icons.psychology_alt_outlined},
         {'id': 'graph', 'label': '图谱', 'icon': Icons.account_tree},
         {'id': 'lab', 'label': '实验室', 'icon': Icons.work_outline},
         {'id': 'create', 'label': '番外', 'icon': Icons.call_split},
       ];
-      
-      // 对于cartoon模式，某些tab不适用
-      final isCartoon = widget.bookId == 'cartoon';
-      final disabledTabs = isCartoon ? ['graph', 'lab', 'create'] : [];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -186,53 +166,48 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
       ),
       child: Row(
         children: tabs.map((tab) {
-          final tabId = tab['id'] as String;
-          final isDisabled = disabledTabs.contains(tabId);
-          final isActive = activeTab == tabId;
+          final isActive = activeTab == tab['id'];
           return Expanded(
             child: GestureDetector(
-              onTap: isDisabled ? null : () {
+              onTap: () {
                 setState(() {
-                  activeTab = tabId;
+                  activeTab = tab['id'] as String;
                 });
               },
-              child: Opacity(
-                opacity: isDisabled ? 0.4 : 1.0,
-                child: Container(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        tab['icon'] as IconData,
-                        size: 20,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      tab['icon'] as IconData,
+                      size: 20,
+                      color: isActive
+                          ? const Color(0xFF4F46E5)
+                          : Colors.grey[400],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      tab['label'] as String,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                         color: isActive
                             ? const Color(0xFF4F46E5)
-                            : (isDisabled ? Colors.grey[300] : Colors.grey[400]),
+                            : Colors.grey[400],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        tab['label'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                          color: isActive
-                              ? const Color(0xFF4F46E5)
-                              : (isDisabled ? Colors.grey[300] : Colors.grey[400]),
+                    ),
+                    if (isActive)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        width: 32,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4F46E5),
+                          borderRadius: BorderRadius.circular(1),
                         ),
                       ),
-                      if (isActive)
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          width: 32,
-                          height: 2,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4F46E5),
-                            borderRadius: BorderRadius.circular(1),
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -251,7 +226,6 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
           isGroupMode: widget.isGroupMode,
           onRoleChanged: widget.onRoleChanged,
           onGroupModeToggle: widget.onGroupModeToggle,
-          bookId: widget.bookId,
         );
       case 'graph':
         return GraphTab(bookId: widget.bookId);
@@ -265,11 +239,11 @@ class _AIDashboardState extends State<AIDashboard> with SingleTickerProviderStat
           quoteVersion: lastQuoteVersion,
           bookId: widget.bookId,
         );
-      // case 'deep':
-      //   return DeepDiveTab(
-      //     injectedQuote: pendingQuote,
-      //     quoteVersion: lastQuoteVersion,
-      //   );
+      case 'deep':
+        return DeepDiveTab(
+          injectedQuote: pendingQuote,
+          quoteVersion: lastQuoteVersion,
+        );
       default:
         return const SizedBox.shrink();
     }
@@ -295,23 +269,14 @@ class AIReadingCompanionTab extends StatefulWidget {
 class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
   final TextEditingController _quoteController = TextEditingController();
   final TextEditingController _inputController = TextEditingController();
-  late final List<_SimpleMessage> _messages;
+  final List<_SimpleMessage> _messages = [
+    _SimpleMessage(
+      sender: 'AI小伴读',
+      content: '你好，我是 AI 陪读。引用任意原文句子并发问，我会结合引用快速解释。',
+    ),
+  ];
   int _lastQuoteVersion = 0;
   int _nextCitationIndex = 1;
-  int _paperQuestionIndex = 0; // 记录论文模式已回答的问题索引
-  
-  @override
-  void initState() {
-    super.initState();
-    _messages = [
-      _SimpleMessage(
-        sender: 'AI深度探讨',
-        content: widget.bookId == 'paper' 
-            ? '你好，我是深度探讨小助手。'
-            : '你好，我是深度探讨。引用任意原文句子并发问，我会结合引用快速解释。',
-      ),
-    ];
-  }
 
   @override
   void dispose() {
@@ -329,7 +294,7 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
       // 提示已插入引用
       setState(() {
         _messages.add(_SimpleMessage(
-          sender: 'AI深度探讨',
+          sender: 'AI小伴读',
           content: '已插入你刚才选中的原文，将随之后的提问一起发送。',
           quote: widget.injectedQuote,
         ));
@@ -342,164 +307,16 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     if (text.isEmpty) return;
     final quote = _quoteController.text.trim().isEmpty ? null : _quoteController.text.trim();
 
-    // 论文模式：检查是否是预设问题
-    if (widget.bookId == 'paper') {
-      final paperReply = _getPaperReply(text);
-      if (paperReply != null) {
-        setState(() {
-          _messages.add(_SimpleMessage(sender: '我', content: text, quote: quote, isUser: true));
-          _messages.add(paperReply);
-          _paperQuestionIndex++;
-        });
-        _inputController.clear();
-        return;
-      }
-    }
-    
-    // Cartoon模式：检查是否是关于漫画深意的问题
-    if (widget.bookId == 'cartoon') {
-      final cartoonReply = _getCartoonReply(text);
-      if (cartoonReply != null) {
-        setState(() {
-          _messages.add(_SimpleMessage(sender: '我', content: text, quote: quote, isUser: true));
-          _messages.add(cartoonReply);
-        });
-        _inputController.clear();
-        return;
-      }
-    }
-
     setState(() {
       _messages.add(_SimpleMessage(sender: '我', content: text, quote: quote, isUser: true));
       _messages.add(_SimpleMessage(
-        sender: 'AI深度探讨',
+        sender: 'AI小伴读',
         content: _aiReply(text, quote),
         quote: quote,
         citationIndex: quote == null || quote.isEmpty ? null : _nextCitationIndex++,
       ));
     });
     _inputController.clear();
-  }
-  
-  // Cartoon模式：获取深度探讨关于漫画深意的回答
-  _SimpleMessage? _getCartoonReply(String userInput) {
-    String normalize(String s) => s.replaceAll('"', '').replaceAll('"', '').replaceAll('：', ':').trim().toLowerCase();
-    final normalized = normalize(userInput);
-    
-    // 检查是否包含漫画相关关键词
-    final keywords = ['漫画', '深意', '意思', '含义', '意义', '讽刺', '什么'];
-    final matchedCount = keywords.where((k) => normalized.contains(k)).length;
-    
-    if (matchedCount >= 2 || normalized.contains('漫画') && (normalized.contains('深意') || normalized.contains('意思'))) {
-      return _SimpleMessage(
-        sender: 'AI深度探讨',
-        content: '这幅漫画具有很强的讽刺意味，深刻揭示了社交媒体时代下人类情感（尤其是悲伤）的异化与表演性。\n\n以下是它的几层深意：\n\n1. 悲伤的"表演化"与"变现" (Performative Grief)\n漫画的上半部分是一个庄重的场景：一个人在悼念逝者，这是人类最私密、最痛苦的时刻之一。然而，这一切是建立在下半部分——巨大的"点赞（Like）"手势之上的。\n这暗示了现代人的一种怪象：如果不发到朋友圈获得点赞，哀悼似乎就无法完成。\n人们把葬礼、痛苦和告别变成了社交媒体上的"内容"，潜意识里希望通过展示悲伤来获取他人的关注、同情和网络流量。\n\n2. 情感的廉价化 (Trivialization of Emotion)\n"点赞"这个手势通常代表"喜欢"、"同意"或"真棒"。用这样一个积极、轻松甚至娱乐化的符号去支撑一个代表死亡和沉痛的墓碑，形成了一种强烈的荒诞感。\n它讽刺了社交网络上互动的肤浅——对他人的巨大悲剧，旁观者往往只需要动动手指点一个"赞"或"蜡烛"表情。这种廉价的互动消解了死亡的严肃性。\n\n3. 存在感的依赖 (Validation of Existence)\n这幅画的构图很有意思：地面是由"点赞"的大拇指托举起来的。这隐喻了数字时代的生存逻辑——我们的生活经历（哪怕是死亡），似乎只有被网络数据（点赞数）支撑时，才具有了"真实性"和"重量"。如果没有人点赞，这种悲伤仿佛就没有立足之地。\n\n4. 隐藏的动机\n地面之上的悲伤是显性的（看得见的），而地下的"点赞"是隐性的（深埋的）。这可能在讽刺当事人内心深处不自知的动机：表面上是在缅怀逝者，根基上却是在寻求社交满足感。',
-      );
-    }
-    
-    return null;
-  }
-
-  // 论文模式：获取预设问答
-  _SimpleMessage? _getPaperReply(String userInput) {
-    String normalize(String s) => s.replaceAll('"', '').replaceAll('"', '').replaceAll('：', ':').trim().toLowerCase();
-    final normalized = normalize(userInput);
-    
-    // 检查是否匹配三个预设问题（更宽松的匹配）
-    final questions = [
-      {
-        'keywords': ['q1', '问题1', '第一个问题', '共享单车', '短期需求预测', '随机森林', 'rf', 'gbdt', 'ols', '普通线性回归', '机器学习集成模型', '优势'],
-        'index': 0,
-      },
-      {
-        'keywords': ['q2', '问题2', '第二个问题', '特征工程', '小时级', '需求量', '最关键因素', '变量重要性', '影响因素', '识别'],
-        'index': 1,
-      },
-      {
-        'keywords': ['q3', '问题3', '第三个问题', 'lasso', 'ridge', '多重共线性', '高维数据', '表现', '优于', '为什么'],
-        'index': 2,
-      },
-    ];
-    
-    for (var q in questions) {
-      final keywords = q['keywords'] as List<String>;
-      // 检查是否包含足够的关键词（至少2个）或者明确的问题编号
-      final matchedKeywords = keywords.where((k) => normalized.contains(k)).length;
-      final isExplicitQuestion = normalized.contains('q1') || normalized.contains('q2') || normalized.contains('q3') ||
-                                 normalized.contains('问题1') || normalized.contains('问题2') || normalized.contains('问题3');
-      
-      if (matchedKeywords >= 2 || isExplicitQuestion) {
-        final index = q['index'] as int;
-        // 如果是明确的问题编号，直接匹配
-        if (isExplicitQuestion) {
-          if ((normalized.contains('q1') || normalized.contains('问题1')) && index == 0) {
-            return _getPaperAnswer(0);
-          }
-          if ((normalized.contains('q2') || normalized.contains('问题2')) && index == 1) {
-            return _getPaperAnswer(1);
-          }
-          if ((normalized.contains('q3') || normalized.contains('问题3')) && index == 2) {
-            return _getPaperAnswer(2);
-          }
-        }
-        // 否则确保按顺序回答
-        if (index == _paperQuestionIndex) {
-          return _getPaperAnswer(index);
-        }
-      }
-    }
-    
-    return null;
-  }
-  
-  // 论文模式：获取预设答案
-  _SimpleMessage _getPaperAnswer(int questionIndex) {
-    final answers = [
-      {
-        'content': '随机森林（RF）和迭代决策树（GBDT）在样本内拟合和样本外预测中均展现出更高的拟合优度（R²）和更低的标准误差（RMSE），显著优于OLS模型。其中，RF模型在样本外预测中的表现最佳。这是因为集成模型能够综合考虑协变量之间的相互作用（例如高峰时段与周末、极端天气的非线性叠加影响），捕捉到OLS模型容易忽略的复杂交互效应，从而不仅提升了预测精度，还具有更强的泛化能力。',
-        'citations': [1, 2, 3, 4],
-        'citationDetails': {
-          1: '摘要提到"相比普通线性回归……随机森林和迭代决策树模型对共享单车短期即时需求预测的结果更精确……拟合优度(R²)更高，标准误差(RMSE)更低"。',
-          2: '正文指出"RF和GBDT模型在样本外预测效果来看……在R²上提升分别达到约39和29个百分点……这两个集成模型在样本内拟合和样本外预测方面都具有较大优势"。',
-          3: '正文指出"RF比GBDT在样本外预测的效果更佳……RF模型的R²比GBDT模型高约10个百分点"。',
-          4: '结论部分解释原因："RF和GBDT模型在进行模型预测分析时能够综合考虑模型协变量之间的相互作用……这是此类机器学习模型在算法上的优势……OLS模型能够观测到高峰时段的重要影响，但该变量在叠加周末、假日时的影响会有所减弱……这是OLS模型在预测过程中无法考量的问题"。',
-        },
-        'thinking': '问题核心在于对比不同模型的性能优势。首先从摘要和模型评估部分（表3及相关文字）提取数据表现（R²和RMSE的对比），确定RF和GBDT优于OLS。其次，从结论部分找到造成这种差异的理论原因（对协变量交互作用的处理能力），从而形成完整的回答。',
-      },
-      {
-        'content': '研究发现，影响共享单车短期需求的主要因素包括特定的位置因素（如是否位于旧金山）、时间因素（尤其是早晚通勤高峰时段及工作日特征）以及天气条件（最高气温和风向）。\n\n在变量识别差异上，OLS、Lasso和Ridge模型倾向于强调特定的时间点（如上午8点、下午5点）和位置变量；而RF和GBDT模型不仅识别了位置和高峰时段，还更敏锐地捕捉到了工作日特征（如周日或周一）以及具体的天气指标（风向、最高气温）的重要性，能够识别出更广泛的综合影响因素。',
-        'citations': [1, 2, 3],
-        'citationDetails': {
-          1: '摘要和结论总结道："影响共享单车小时需求的主要因素包括特定的位置因素、时间因素以及天气条件因素"。',
-          2: '正文指出OLS、Lasso和Ridge指向了相同的五个变量，"包括上午8点、9点……和下午4点、5点……两个上下班通勤高峰期的四个时间段变量和特定空间位置（旧金山城市）变量"。',
-          3: '正文提到RF和GBDT"综合包含了位置、时间和天气特征……在位置变量上……选择了旧金山和San Jose，在时间变量上选择了高峰时段、工作日和周末变量，在天气特征上选择了风向和最高气温"。',
-        },
-        'thinking': '问题侧重于影响因素和模型间的"解释性"差异。我首先归纳了所有模型共识的核心因素（时间、地点、天气）。然后对比表4和表5的分析结果，区分传统线性模型（侧重具体时刻点）和树模型（侧重更广泛的特征组合，如加入了风向和气温的具体指标）在特征重要性排序上的不同。',
-      },
-      {
-        'content': '这是因为本研究基于经济学基本理论选取变量，所选取的变量（如时间、天气、地点）多为直接影响因素，自变量之间的多重共线性问题并不突出，且变量维度虽多但并未达到极高维度的"灾难"级别。Lasso和Ridge的主要优势在于处理协变量过多或存在严重共线性的情况，且它们缺乏处理变量间复杂非线性交互作用的能力（这正是集成模型的强项）。因此，在缺乏显著共线性且主要依赖直接因果变量的数据集中，这两类模型无法发挥其降维优势，预测效果仅与OLS相当。',
-        'citations': [1, 2],
-        'citationDetails': {
-          1: '正文明确解释："由于模型选取依据了经济学的基本理论，非直接影响的变量基本没有选取，其自变量之间的共线性问题也并不突出，因此没有体现出这类模型（Lasso和Ridge）的优势"。',
-          2: '结论部分进一步补充："Lasso和Ridge模型的优势在于处理协变量数量过多或变量之间存在多重共线的情况，对于变量之间的交互作用也缺乏处理……因而预测效果与OLS相当"。',
-        },
-        'thinking': '这是一个关于模型适用性边界的问题。Lasso/Ridge通常用于高维数据，但在此文中表现平平。通过阅读"模型评估与预测结果"章节，作者明确指出了原因：一是数据本身的特性（共线性不强，特征选择基于理论而非盲目罗列），二是模型本身的局限（无法处理交互项，这一点与RF/GBDT形成对比）。将这两点结合即可解释为何它们没有超越OLS。',
-      },
-    ];
-    
-    if (questionIndex >= answers.length) return _SimpleMessage(
-      sender: 'AI深度探讨',
-      content: '所有预设问题已回答完毕。',
-    );
-    
-    final answer = answers[questionIndex];
-    return _SimpleMessage(
-      sender: 'AI深度探讨',
-      content: answer['content'] as String,
-      citationIndices: answer['citations'] as List<int>,
-      citationDetails: answer['citationDetails'] as Map<int, String>,
-      thinking: answer['thinking'] as String,
-    );
   }
 
   String _aiReply(String user, String? quote) {
@@ -594,7 +411,7 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('深度探讨', '即时问答 · 可多次引用不同段落'),
+        _sectionHeader('AI陪读', '即时问答 · 可多次引用不同段落'),
         _quoteBox(
           controller: _quoteController,
           label: '当前引用（仅支持从正文点击自动带入）',
@@ -621,22 +438,17 @@ class _AIReadingCompanionTabState extends State<AIReadingCompanionTab> {
   }
 
   void _showCitation(_SimpleMessage message) {
-    final citationIndices = message.allCitationIndices;
-    if (citationIndices.isEmpty) {
+    if (message.citationIndex == null || message.quote == null || message.quote!.trim().isEmpty) {
       return;
     }
     _showAiCitationDialog(
       context: context,
       message: message,
-      title: citationIndices.length == 1 
-          ? '深度探讨 · 精准溯源 [${citationIndices.first}]'
-          : '深度探讨 · 精准溯源 [${citationIndices.join('][')}]',
+      title: 'AI陪读 · 精准溯源 [${message.citationIndex}]',
     );
   }
 }
 
-// 已注释：原来的深度探讨功能
-/*
 class DeepDiveTab extends StatefulWidget {
   final String? injectedQuote;
   final int quoteVersion;
@@ -657,7 +469,7 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
   final List<_SimpleMessage> _messages = [
     _SimpleMessage(
       sender: 'AI深度探讨',
-      content: '先指定一个段落，我会围绕它持续追问与拆解。要换观点，点"开启新的深度探讨"。',
+      content: '先指定一个段落，我会围绕它持续追问与拆解。要换观点，点“开启新的深度探讨”。',
     ),
   ];
   String? _activeQuote;
@@ -717,21 +529,21 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
   }
 
   String _deepReply(String user, String quote) {
-    String normalize(String s) => s.replaceAll('"', '').replaceAll('"', '').replaceAll('：', ':').trim();
+    String normalize(String s) => s.replaceAll('“', '').replaceAll('”', '').replaceAll('：', ':').trim();
     final nq = normalize(quote);
     final nu = normalize(user);
     final isPoem1 = nq.contains('薄云断绝西风紧') || nq.contains('鹤鸣远岫霜林锦') || nq.contains('山长水更长');
     final isOldMan = nq.contains('穿一领黄不黄') || nq.contains('红不红的葛布深衣') || nq.contains('篾丝凉帽') || nq.contains('暴节竹杖');
 
     if (isPoem1) {
-      return '引用段落：$quote\n\n我先抛 3 个问题引导你思考（你可以逐个答）：\n1) **情绪从哪来**：你觉得"冷"主要来自天气（西风/霜林）还是来自处境（客路孤单/衲衣易寒）？\n2) **镜头怎么走**：这段从"天象"写到"飞鸟"再落到"人"，这种推进对你有什么阅读感受？\n3) **叙事功能**：如果把这段删掉，后面的"行路/遭遇"会少掉什么？\n\n我的示范答案（供你对照）：它用景物把"孤旅与苍凉"提前灌进读者心里，让后续剧情更有重量。\n\n你刚才说：「$nu」——你更同意第 1 点（情绪）还是第 3 点（功能）？';
+      return '引用段落：$quote\n\n我先抛 3 个问题引导你思考（你可以逐个答）：\n1) **情绪从哪来**：你觉得“冷”主要来自天气（西风/霜林）还是来自处境（客路孤单/衲衣易寒）？\n2) **镜头怎么走**：这段从“天象”写到“飞鸟”再落到“人”，这种推进对你有什么阅读感受？\n3) **叙事功能**：如果把这段删掉，后面的“行路/遭遇”会少掉什么？\n\n我的示范答案（供你对照）：它用景物把“孤旅与苍凉”提前灌进读者心里，让后续剧情更有重量。\n\n你刚才说：「$nu」——你更同意第 1 点（情绪）还是第 3 点（功能）？';
     }
 
     if (isOldMan) {
-      return '引用段落：$quote\n\n引导问题（你选 1-2 个回答）：\n1) **叠词的效果**：反复"X不X"让你感觉这个人更真实，还是更神秘？为什么？\n2) **身份猜测**：仅凭衣帽器物的"不正""不齐"，你会把他归为哪一类人（贫寒/行旅/隐士/怪人）？\n3) **作者动机**：作者为什么不直接说"衣服旧、帽子旧"，而要绕这么一圈？\n\n我的示范答案：这种写法像"打灯"，用不确定性把人物照得更立体，也顺便吊起读者的好奇，给后文埋钩子。\n\n你刚才说：「$nu」——你更想从"写法技巧"聊，还是从"剧情作用"聊？';
+      return '引用段落：$quote\n\n引导问题（你选 1-2 个回答）：\n1) **叠词的效果**：反复“X不X”让你感觉这个人更真实，还是更神秘？为什么？\n2) **身份猜测**：仅凭衣帽器物的“不正”“不齐”，你会把他归为哪一类人（贫寒/行旅/隐士/怪人）？\n3) **作者动机**：作者为什么不直接说“衣服旧、帽子旧”，而要绕这么一圈？\n\n我的示范答案：这种写法像“打灯”，用不确定性把人物照得更立体，也顺便吊起读者的好奇，给后文埋钩子。\n\n你刚才说：「$nu」——你更想从“写法技巧”聊，还是从“剧情作用”聊？';
     }
 
-    return '引用段落：$quote\n\n我会按"文本细节 → 作者选择 → 读者感受 → 情节/主题作用"来带你。\n\n先问你 2 个问题：\n1) 这段里你觉得最关键的一个词/一句是哪一个？为什么？\n2) 你读完的第一情绪是：紧张/悲凉/好笑/敬畏/别的？\n\n我的初步解读：这段很可能在用细节（意象/动作/口吻）塑造人物或铺垫冲突。\n\n你先回答第 1 个问题，我再顺着你的答案继续追问并给出对应分析。';
+    return '引用段落：$quote\n\n我会按“文本细节 → 作者选择 → 读者感受 → 情节/主题作用”来带你。\n\n先问你 2 个问题：\n1) 这段里你觉得最关键的一个词/一句是哪一个？为什么？\n2) 你读完的第一情绪是：紧张/悲凉/好笑/敬畏/别的？\n\n我的初步解读：这段很可能在用细节（意象/动作/口吻）塑造人物或铺垫冲突。\n\n你先回答第 1 个问题，我再顺着你的答案继续追问并给出对应分析。';
   }
 
   @override
@@ -739,10 +551,10 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('深度探讨', '从正文点"深度探讨"后，我会围绕该段持续追问'),
+        _sectionHeader('深度探讨', '从正文点“深度探讨”后，我会围绕该段持续追问'),
         _quoteBox(
           controller: _quoteController,
-          label: '要探讨的段落/观点（仅支持从正文点击"深度探讨"自动带入）',
+          label: '要探讨的段落/观点（仅支持从正文点击“深度探讨”自动带入）',
           readOnly: true,
         ),
         Padding(
@@ -781,30 +593,23 @@ class _DeepDiveTabState extends State<DeepDiveTab> {
   }
 
   void _showCitation(_SimpleMessage message) {
-    final citationIndices = message.allCitationIndices;
-    if (citationIndices.isEmpty) {
+    if (message.citationIndex == null || message.quote == null || message.quote!.trim().isEmpty) {
       return;
     }
     _showAiCitationDialog(
       context: context,
       message: message,
-      title: citationIndices.length == 1 
-          ? '深度探讨 · 精准溯源 [${citationIndices.first}]'
-          : '深度探讨 · 精准溯源 [${citationIndices.join('][')}]',
+      title: '深度探讨 · 精准溯源 [${message.citationIndex}]',
     );
   }
 }
-*/
 
 class _SimpleMessage {
   final String sender;
   final String content;
   final String? quote;
   final bool isUser;
-  final int? citationIndex; // 单个引用索引（向后兼容）
-  final List<int>? citationIndices; // 多个引用索引（论文模式）
-  final Map<int, String>? citationDetails; // 引用详情（论文模式）
-  final String? thinking; // 思考过程（论文模式）
+  final int? citationIndex;
 
   _SimpleMessage({
     required this.sender,
@@ -812,21 +617,7 @@ class _SimpleMessage {
     this.quote,
     this.isUser = false,
     this.citationIndex,
-    this.citationIndices,
-    this.citationDetails,
-    this.thinking,
   });
-  
-  // 获取所有引用索引
-  List<int> get allCitationIndices {
-    if (citationIndices != null && citationIndices!.isNotEmpty) {
-      return citationIndices!;
-    }
-    if (citationIndex != null) {
-      return [citationIndex!];
-    }
-    return [];
-  }
 }
 
 class _MessageBubble extends StatelessWidget {
@@ -893,87 +684,44 @@ class _MessageBubble extends StatelessWidget {
 
   Widget _buildContentWithCitation(BuildContext context) {
     final baseStyle = const TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF1F2937));
-    final citationIndices = message.allCitationIndices;
     final hasCitation = !message.isUser &&
-        citationIndices.isNotEmpty &&
+        message.citationIndex != null &&
+        message.quote != null &&
+        message.quote!.trim().isNotEmpty &&
         onCitationTap != null;
 
     if (!hasCitation) {
       return Text(message.content, style: baseStyle);
     }
 
-    // 如果有多个引用索引（论文模式），在内容末尾显示所有上角标
-    final List<InlineSpan> spans = [
-      TextSpan(text: message.content),
-    ];
-    
-    // 添加所有上角标（紧凑显示）
-    if (citationIndices.length == 1) {
-      // 单个上角标
-      spans.add(
-        WidgetSpan(
-          alignment: PlaceholderAlignment.top,
-          child: GestureDetector(
-            onTap: () => onCitationTap?.call(message),
-            child: Container(
-              margin: const EdgeInsets.only(left: 3, bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4F46E5),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '[${citationIndices.first}]',
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+    return RichText(
+      text: TextSpan(
+        style: baseStyle,
+        children: [
+          TextSpan(text: message.content),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.top,
+            child: GestureDetector(
+              onTap: () => onCitationTap?.call(message),
+              child: Container(
+                margin: const EdgeInsets.only(left: 4, bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4F46E5),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '[${message.citationIndex}]',
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-    } else if (citationIndices.length > 1) {
-      // 多个上角标：紧凑显示在一起
-      spans.add(
-        WidgetSpan(
-          alignment: PlaceholderAlignment.top,
-          child: GestureDetector(
-            onTap: () => onCitationTap?.call(message),
-            child: Container(
-              margin: const EdgeInsets.only(left: 3, bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4F46E5),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: citationIndices.map((index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 1),
-                    child: Text(
-                      '[$index]',
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return RichText(
-      text: TextSpan(
-        style: baseStyle,
-        children: spans,
+        ],
       ),
     );
   }
@@ -984,18 +732,9 @@ void _showAiCitationDialog({
   required _SimpleMessage message,
   required String title,
 }) {
-  // 论文模式：显示完整的依据原文和思考过程
-  bool _isPaperMode() {
-    return message.citationDetails != null && message.citationDetails!.isNotEmpty;
-  }
-  
+  // 在追溯弹窗里，我们只展示“溯源原文 + AI 的思考过程”，
+  // 不再把整段答案原封不动塞进来，避免用户感觉是在重复阅读同一段内容。
   String _buildReasoning() {
-    // 论文模式：使用预设的思考过程
-    if (_isPaperMode() && message.thinking != null) {
-      return message.thinking!;
-    }
-    
-    // 原有逻辑（其他模式）
     final quote = (message.quote ?? '').trim();
     final answer = message.content.trim();
     final hasQuote = quote.isNotEmpty;
@@ -1019,19 +758,6 @@ void _showAiCitationDialog({
     }
 
     return lines.join('\n');
-  }
-  
-  List<Map<String, String>> _buildCitationDetails() {
-    if (!_isPaperMode() || message.citationDetails == null) {
-      return [];
-    }
-    
-    return message.citationDetails!.entries.map((entry) {
-      return {
-        'index': entry.key.toString(),
-        'content': entry.value,
-      };
-    }).toList();
   }
 
   showDialog(
@@ -1069,98 +795,37 @@ void _showAiCitationDialog({
                 ],
               ),
               const SizedBox(height: 12),
-              // 论文模式：显示多个依据原文
-              if (_isPaperMode()) ...[
-                ..._buildCitationDetails().map((detail) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9FAFB),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4F46E5),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  '[${detail['index']}]',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                '依据原文',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF4B5563),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            detail['content'] ?? '',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              height: 1.6,
-                              color: Color(0xFF111827),
-                              fontFamily: 'serif',
-                            ),
-                          ),
-                        ],
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '溯源原文',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF4B5563),
                       ),
                     ),
-                  );
-                }),
-              ] else ...[
-                // 原有模式：显示单个引用
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF9FAFB),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '溯源原文',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF4B5563),
-                        ),
+                    const SizedBox(height: 6),
+                    Text(
+                      message.quote ?? '',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.6,
+                        color: Color(0xFF111827),
+                        fontFamily: 'serif',
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        message.quote ?? '',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          height: 1.6,
-                          color: Color(0xFF111827),
-                          fontFamily: 'serif',
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
               const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
@@ -1173,23 +838,23 @@ void _showAiCitationDialog({
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _isPaperMode() ? '思考过程' : '推理路径（AI 如何从原文走到这条回答）',
-                          style: const TextStyle(
+                        const Text(
+                          '推理路径（AI 如何从原文走到这条回答）',
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF4338CA),
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          _buildReasoning(),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            height: 1.6,
-                            color: Color(0xFF1F2937),
-                          ),
+                      Text(
+                        _buildReasoning(),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.6,
+                          color: Color(0xFF1F2937),
                         ),
+                      ),
                       ],
                     ),
                   ),

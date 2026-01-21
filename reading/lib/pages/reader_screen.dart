@@ -65,6 +65,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   bool _xyjPdfMode = true; // 西游记：默认展示 PDF 文档模式；开启"扫描成文本"后变为现有文本阅读（不改变）
   String? _activePdfAsset; // 当前加载到临时文件的 PDF asset 路径
   late AnimationController _glowController; // 灯泡发光动画控制器
+  bool showKnowledgeCard = false; // 是否显示知识卡片
 
   @override
   void initState() {
@@ -300,6 +301,8 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
               if (showExplanationIndex != null) _buildExplanationPanel(),
               // 设置面板
               if (showSettings) _buildSettingsPanel(),
+              // 知识卡片（论文标记）
+              if (showKnowledgeCard) _buildKnowledgeCard(),
               // 底部播放条（听书时显示）
               if (isListening && !showDashboard) _buildAudioPlayerBar(),
               // 底部触发器
@@ -531,34 +534,77 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
       );
     }
 
+    // 判断是否是paper.pdf且在第2页
+    final isPaperPdf = _isPaper && widget.pdfAssetPath != null && 
+                       widget.pdfAssetPath!.contains('paper.pdf');
+    final isPage2 = currentPage == 1; // PDF页面从0开始，第2页索引为1
+
     return Container(
       color: const Color(0xFFFDFBF7),
-      child: PDFView(
-        filePath: _pdfFilePath!,
-        swipeHorizontal: true,
-        pageFling: true,
-        autoSpacing: false,
-        fitPolicy: FitPolicy.BOTH,
-        onRender: (pages) {
-          if (!mounted) return;
-          setState(() {
-            _pdfTotalPages = pages;
-            _pdfReady = true;
-          });
-        },
-        onError: (error) {
-          if (!mounted) return;
-          setState(() {
-            _pdfReady = false;
-          });
-        },
-        onPageChanged: (page, total) {
-          if (!mounted) return;
-          setState(() {
-            currentPage = page ?? 0;
-            _pdfTotalPages = total;
-          });
-        },
+      child: Stack(
+        children: [
+          PDFView(
+            filePath: _pdfFilePath!,
+            swipeHorizontal: true,
+            pageFling: true,
+            autoSpacing: false,
+            fitPolicy: FitPolicy.BOTH,
+            onRender: (pages) {
+              if (!mounted) return;
+              setState(() {
+                _pdfTotalPages = pages;
+                _pdfReady = true;
+              });
+            },
+            onError: (error) {
+              if (!mounted) return;
+              setState(() {
+                _pdfReady = false;
+              });
+            },
+            onPageChanged: (page, total) {
+              if (!mounted) return;
+              setState(() {
+                currentPage = page ?? 0;
+                _pdfTotalPages = total;
+              });
+            },
+          ),
+          // 在PDF上方叠加标记（仅paper.pdf第2页显示）
+          if (isPaperPdf && isPage2)
+            Positioned(
+              // 标记位置：大约在第二段第二行的位置
+              top: MediaQuery.of(context).size.height * 0.35, // 调整这个值来定位到正确位置
+              left: MediaQuery.of(context).size.width * 0.65, // 调整这个值来定位到正确位置
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    showKnowledgeCard = true;
+                  });
+                },
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4F46E5),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4F46E5).withOpacity(0.3),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -2275,6 +2321,307 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildKnowledgeCard() {
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            showKnowledgeCard = false;
+          });
+        },
+        child: Container(
+          color: Colors.black.withOpacity(0.3),
+          child: Center(
+            child: GestureDetector(
+              onTap: () {}, // 阻止点击穿透
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                constraints: BoxConstraints(
+                  maxWidth: 600,
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 标题栏
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Color(0xFFF3F4F6), width: 1),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.lightbulb_outline, size: 20, color: Color(0xFF6366F1)),
+                              SizedBox(width: 8),
+                              Text(
+                                'AI知识卡片',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                showKnowledgeCard = false;
+                              });
+                            },
+                            icon: const Icon(Icons.close, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // 内容
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '1. Kaspi (2016) "贝叶斯估计模型" 是什么？',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              '论文信息',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              '这篇被引用的论文全名为 "Detection of unusable bicycles in bike-sharing systems" (发表于 Omega)。',
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.6,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '模型简介',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              '这是一个用于检测"隐性故障"车辆的概率模型。',
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.6,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '核心逻辑',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildBulletPoint('问题背景：用户借车后发现车是坏的，通常会立刻还车（往往还回同一个桩），且很少主动报修。系统显示该车"在桩且可用"，但实际上它是坏的。'),
+                                  const SizedBox(height: 8),
+                                  _buildBulletPoint('核心证据：利用行程持续时间（Trip Duration）作为核心证据。如果一辆车被借出后在极短时间内（例如2分钟内）被归还，它极大概率是坏车。'),
+                                  const SizedBox(height: 8),
+                                  _buildBulletPoint('贝叶斯方法：模型维护每辆车的"不可用概率"（Probability of Unusability, PoU）。每当发生一次借还车事件，模型就根据行程时长更新这辆车坏掉的后验概率。'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              '2. 模型公式（基于原论文逻辑的重构）',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              '虽然您提供的PDF中没有公式，但该模型的核心是标准的贝叶斯更新（Bayesian Update）。',
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.6,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              '假设：',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildBulletPoint('HU：假设车辆是坏的（Unusable）'),
+                                  _buildBulletPoint('HW：假设车辆是好的（Working/Usable）'),
+                                  _buildBulletPoint('D：观测到的行程数据（主要是行程时间t）'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              '贝叶斯公式：',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF9FAFB),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                              ),
+                              child: const Text(
+                                'P(HU|D) = (P(D|HU) × P(HU)) / (P(D|HU) × P(HU) + P(D|HW) × P(HW))',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontFamily: 'monospace',
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              '其中：',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildBulletPoint('P(HU)：先验概率（Prior）。即在这次借车前，系统认为这辆车是坏车的概率。'),
+                                  const SizedBox(height: 6),
+                                  _buildBulletPoint('P(D|HU)：似然函数（Likelihood）。如果车是坏的，用户产生该行程时间t的概率（通常坏车的行程时间极短，集中在0-3分钟）。'),
+                                  const SizedBox(height: 6),
+                                  _buildBulletPoint('P(D|HW)：如果车是好的，用户产生该行程时间t的概率（通常服从正常的骑行时间分布，如对数正态分布）。'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              '3. 直观理解',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              '如果用户骑了30分钟才还车，那么P(D|HU)极小（坏车很难骑30分钟），计算出的后验概率 P(HU|D) 就会趋近于0（车是好的）。',
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.6,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              '反之，如果用户2分钟就还车了，且P(D|HU)很高，后验概率就会飙升，系统判定该车可能已损坏。',
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.6,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '• ',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF374151),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.6,
+              color: Color(0xFF374151),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
