@@ -127,7 +127,7 @@ class _GraphTabState extends State<GraphTab> {
                           const Icon(Icons.account_tree, size: 12, color: Colors.white),
                           const SizedBox(width: 6),
                           Text(
-                            useKnowledge ? '知识图谱 · 情节关联' : '人物关系网',
+                            useKnowledge ? '情节关联图谱' : '人物关系网',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.white,
@@ -148,7 +148,7 @@ class _GraphTabState extends State<GraphTab> {
                       child: Row(
                         children: [
                           _GraphToggleChip(
-                            label: '人物关系',
+                            label: '人物关系图谱',
                             selected: !useKnowledge,
                             onTap: () {
                               setState(() {
@@ -160,7 +160,7 @@ class _GraphTabState extends State<GraphTab> {
                           ),
                           const SizedBox(width: 6),
                           _GraphToggleChip(
-                            label: '知识图谱',
+                            label: '情节关联图谱',
                             selected: useKnowledge,
                             disabled: !hasKnowledge,
                             onTap: hasKnowledge

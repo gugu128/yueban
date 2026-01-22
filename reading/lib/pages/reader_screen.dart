@@ -66,6 +66,9 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   String? _activePdfAsset; // 当前加载到临时文件的 PDF asset 路径
   late AnimationController _glowController; // 灯泡发光动画控制器
   bool showKnowledgeCard = false; // 是否显示知识卡片
+  Offset? _floatingButtonPosition; // 浮动按钮位置（null 表示未初始化）
+  bool _isDragging = false; // 是否正在拖动
+  Offset _dragStartGlobalPosition = Offset.zero; // 拖动开始的全局位置
 
   @override
   void initState() {
@@ -1885,45 +1888,163 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   }
 
   Widget _buildFloatingButton() {
+    // 获取屏幕尺寸
+    final screenSize = MediaQuery.of(context).size;
+    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+    final safeAreaTop = MediaQuery.of(context).padding.top;
+    
+    // 按钮尺寸
+    const buttonSize = 56.0;
+    
+    // 初始化位置（如果还未初始化）
+    if (_floatingButtonPosition == null) {
+      // 初始位置：右下角
+      final bottomOffset = isListening ? 82.0 : 42.0;
+      _floatingButtonPosition = Offset(
+        screenSize.width - 24 - buttonSize, // right: 24, button width: 56
+        screenSize.height - bottomOffset - buttonSize - safeAreaBottom, // bottom offset + button height
+      );
+    }
+    
+    // 计算实际显示位置（考虑安全区域）
+    final displayX = _floatingButtonPosition!.dx.clamp(0.0, screenSize.width - buttonSize);
+    final displayY = _floatingButtonPosition!.dy.clamp(
+      safeAreaTop,
+      screenSize.height - buttonSize - safeAreaBottom - (isListening ? 82 : 42),
+    );
+    
     return Positioned(
-      bottom: isListening ? 82 : 42, // 如果正在听书，浮动按钮上移；整体往下移10px
-      right: 24,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                showDashboard = true;
-              });
-            },
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFFFD700),
-                    Color(0xFFFFA500),
-                  ],
-                ),
-                shape: BoxShape.circle,
+      left: displayX,
+      top: displayY,
+      child: GestureDetector(
+        onPanStart: (details) {
+          setState(() {
+            _isDragging = true;
+            _dragStartGlobalPosition = details.globalPosition;
+          });
+        },
+        onPanUpdate: (details) {
+          setState(() {
+            // 更新位置
+            _floatingButtonPosition = Offset(
+              (_floatingButtonPosition!.dx + details.delta.dx).clamp(0.0, screenSize.width - buttonSize),
+              (_floatingButtonPosition!.dy + details.delta.dy).clamp(
+                safeAreaTop,
+                screenSize.height - buttonSize - safeAreaBottom - (isListening ? 82 : 42),
               ),
-              child: Center(
-                child: Icon(
-                  Icons.lightbulb,
-                  size: 22,
-                  color: Colors.white,
-                ),
+            );
+          });
+        },
+        onPanEnd: (details) {
+          final wasDragging = _isDragging;
+          setState(() {
+            _isDragging = false;
+          });
+          
+          // 如果拖动距离很小，认为是点击事件
+          final dragDistance = (details.globalPosition - _dragStartGlobalPosition).distance;
+          if (dragDistance < 10 && wasDragging) {
+            // 触发点击事件
+            setState(() {
+              showDashboard = true;
+            });
+            return;
+          }
+          
+          // 吸附到最近的边缘
+          final currentX = _floatingButtonPosition!.dx;
+          final screenCenterX = screenSize.width / 2;
+          
+          // 判断应该吸附到左边还是右边
+          final targetX = currentX < screenCenterX 
+              ? 0.0  // 吸附到左边
+              : screenSize.width - buttonSize; // 吸附到右边
+          
+          // 使用动画平滑移动到目标位置
+          final targetPosition = Offset(
+            targetX,
+            _floatingButtonPosition!.dy,
+          );
+          
+          // 使用动画平滑移动到目标位置
+          _animateToPosition(targetPosition);
+        },
+        onTap: () {
+          // 只有在没有拖动的情况下才触发点击
+          if (!_isDragging) {
+            setState(() {
+              showDashboard = true;
+            });
+          }
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          width: buttonSize,
+          height: buttonSize,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFD700),
+                Color(0xFFFFA500),
+              ],
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(_isDragging ? 0.3 : 0.2),
+                blurRadius: _isDragging ? 12 : 8,
+                spreadRadius: _isDragging ? 2 : 0,
+                offset: Offset(0, _isDragging ? 4 : 2),
               ),
+            ],
+          ),
+          child: Center(
+            child: Icon(
+              Icons.lightbulb,
+              size: 22,
+              color: Colors.white,
             ),
           ),
-        ],
+        ),
       ),
     );
+  }
+  
+  // 动画移动到目标位置
+  void _animateToPosition(Offset targetPosition) {
+    if (_floatingButtonPosition == null) return;
+    
+    final startPosition = _floatingButtonPosition!;
+    final controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    
+    final animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: Curves.easeOut,
+      ),
+    );
+    
+    animation.addListener(() {
+      if (mounted) {
+        setState(() {
+          _floatingButtonPosition = Offset.lerp(
+            startPosition,
+            targetPosition,
+            animation.value,
+          )!;
+        });
+      }
+    });
+    
+    controller.forward().then((_) {
+      controller.dispose();
+    });
   }
 
   // 根据角色ID返回专属的浅色气泡颜色
@@ -2820,7 +2941,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        '关闭时阅读原始文档（assets/PDF/xyj.pdf）；开启后使用可高亮/批注的文本模式',
+                                        '关闭时阅读原始文档；开启后使用可高亮/批注的文本模式',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey[600],
