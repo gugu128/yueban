@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:reading/services/mock_data.dart';
+import 'package:reading/services/mock_data.dart' as mock_data;
 import 'package:reading/models/book_content.dart';
 
 class CompanionSelectionScreen extends StatefulWidget {
@@ -44,7 +44,7 @@ class _CompanionSelectionScreenState extends State<CompanionSelectionScreen> {
     }
     selectedRoleIds
       ..clear()
-      ..addAll(ids.where((id) => allCompanionRoles.any((r) => r.id == id)).take(3));
+      ..addAll(ids.where((id) => mock_data.allCompanionRoles.any((r) => r.id == id)).take(3));
   }
 
   @override
@@ -107,7 +107,7 @@ class _CompanionSelectionScreenState extends State<CompanionSelectionScreen> {
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
-                    children: allCompanionRoles.map((role) {
+                    children: mock_data.allCompanionRoles.map((role) {
                       final isSelected = selectedRoleIds.contains(role.id);
                       final canSelect = selectedRoleIds.length < 3 || isSelected;
                       
@@ -185,7 +185,7 @@ class _CompanionSelectionScreenState extends State<CompanionSelectionScreen> {
             child: ElevatedButton(
               onPressed: selectedRoleIds.isNotEmpty
                   ? () {
-                      final selectedRoles = allCompanionRoles
+                      final selectedRoles = mock_data.allCompanionRoles
                           .where((role) => selectedRoleIds.contains(role.id))
                           .toList();
                       widget.onConfirm(selectedRoles, false);

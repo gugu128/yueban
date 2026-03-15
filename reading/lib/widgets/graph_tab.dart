@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:reading/services/mock_data.dart';
+import 'package:reading/services/mock_data.dart' as mock_data;
 import 'package:reading/models/book_content.dart';
 
 class GraphTab extends StatefulWidget {
@@ -63,11 +63,11 @@ class _GraphTabState extends State<GraphTab> {
     final hasKnowledge = isJane || isXyj;
 
     final nodes = useKnowledge
-        ? (isJane ? janeKnowledgeGraphNodes : xyjKnowledgeGraphNodes)
-        : (isJane ? janeGraphNodes : graphNodes);
+        ? (isJane ? mock_data.janeKnowledgeGraphNodes : mock_data.xyjKnowledgeGraphNodes)
+        : (isJane ? mock_data.janeGraphNodes : mock_data.graphNodes);
     final relations = useKnowledge
-        ? (isJane ? janeKnowledgeGraphRelations : xyjKnowledgeGraphRelations)
-        : (isJane ? janeGraphRelations : graphRelations);
+        ? (isJane ? mock_data.janeKnowledgeGraphRelations : mock_data.xyjKnowledgeGraphRelations)
+        : (isJane ? mock_data.janeGraphRelations : mock_data.graphRelations);
 
     return Container(
       color: const Color(0xFF0F172A), // slate-900

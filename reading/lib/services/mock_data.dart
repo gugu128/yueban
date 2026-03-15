@@ -341,14 +341,6 @@ final List<Role> allCompanionRoles = [
     greeting: '俺老孙看这书，甚是有趣！你想问俺什么？这情节俺见得多了，你想听听俺的看法吗？',
   ),
   Role(
-    id: 'trump',
-    name: '唐纳德·特朗普',
-    avatar: '💼',
-    style: '商业思维、自信张扬',
-    colorClass: 'red',
-    greeting: '相信我，没有人比我更懂谈判和交易！这段情节从商业角度看很有意思，你想聊聊什么？',
-  ),
-  Role(
     id: 'luxun',
     name: '鲁迅',
     avatar: '📚',
@@ -436,12 +428,12 @@ final List<Role> reviewers = [
     greeting: '从技术创新角度看，这个情节很有意思...',
   ),
   Role(
-    id: 'trump',
-    name: '特朗普',
+    id: 'mayun',
+    name: '马云',
     avatar: '💼',
-    style: '商业思维、自信张扬',
-    colorClass: 'red',
-    greeting: '相信我，没有人比我更懂谈判...',
+    style: '商业智慧、战略思维',
+    colorClass: 'green',
+    greeting: '从商业和长期主义角度看，这段情节很有启发，你怎么看？',
   ),
   Role(
     id: 'lindaiyu',
@@ -1305,10 +1297,10 @@ final Map<int, Comment> comments = {
     contentIndex: 3,
     annotations: [
       Annotation(
-        reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerId: 'mayun',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is a great question! 就像我在商业中常说的，当你发现异常情况时，一定要问"为什么"。这里唐僧发现了季节反常，说明他有敏锐的观察力。在商业中，这种敏锐度能帮你发现机会和风险。',
+        comment: '这个问题问得好。做生意最怕“看不见的异常”，一旦发现反常，就要追根究底。唐僧的敏锐就是一种“风险预警”，企业也是一样，能提前发现变化的人，才有机会把挑战变成机会。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1330,10 +1322,10 @@ final Map<int, Comment> comments = {
     contentIndex: 5,
     annotations: [
       Annotation(
-        reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerId: 'mayun',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'Very good point! 这就是执行力的问题。在我做房地产时，最成功的人都是快速决策、立即行动的。这就像我的名言："要么做得很好，要么根本不做。"取经这件事，必须果断！唐僧这种犹豫不决的性格，在商场上会错失很多机会。',
+        comment: '执行力就是一切。机会来时不等人，犹豫就会把窗口关上。做企业要敢想也要敢做，但前提是方向明确、团队一致，这样行动才有意义。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1356,9 +1348,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is a problem that needs solving! 就像我在商业中遇到的各种挑战，火焰山就是一个巨大的障碍。但关键是要找到解决方案 - 芭蕉扇。在商业中，我们也要找到这样的"芭蕉扇"，能够解决看似不可能的问题。',
+        comment: '困难本身不可怕，可怕的是没有方法。火焰山像市场里的“硬障碍”，真正的关键在于找到那把“芭蕉扇”——也就是核心资源与关键能力。企业要做的就是把这把扇子握在自己手里。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1381,9 +1373,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is hilarious! 悟空这个动作让我想起了我在谈判桌上的表现 - 有时候你不得不忍受一些不舒服的情况，但你不能表现出来。不过这里悟空倒是很真实，直接说出了感受。在商业中，有时候诚实比伪装更有力量。',
+        comment: '这个细节很真实。做事的人都会遇到“不舒服”的阶段，能不能扛住、能不能讲真话很重要。有时候坦诚比伪装更有效，因为信任才是合作的底层逻辑。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1406,15 +1398,15 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is brilliant! 一个工具解决三个问题 - 这就是效率！在商业中，我们也要寻找这样的"芭蕉扇"，能够一举多得的解决方案。铁扇公主拥有这个法宝，就像拥有了一项垄断技术，这就是她的竞争优势。',
+        comment: '一把扇子解决三件事，这是“效率工具”的典型。企业要打造自己的核心能力，别人没有的才是优势。真正的壁垒不是规模，而是让对方离不开你的能力。',
       ),
       Annotation(
         reviewerId: 'luxun',
         reviewerName: '鲁迅',
         reviewerAvatar: '📚',
-        comment: '这里揭示了一个深刻的社会问题：资源的垄断。铁扇公主拥有芭蕉扇，就掌握了当地百姓的生存命脉。这种权力关系，在现实中比比皆是。正如我在《药》中所批判的，当资源被少数人垄断时，普通百姓就只能任人摆布。',
+        comment: '这“五谷养生”的扇子，与老栓手里那裹着的“药”，本质上是一样的。一个在焦土上磕头，一个在刑场上塞钱，求的都是那点劫掠后的施舍。剥削者把命脉攥在手心里，百姓便连灵魂也一并交了出去。火未灭，血已冷，这世上只要还有姓“罗”的扇子，便总有治不好的病，和烧不尽的荒野。',
       ),
       Annotation(
         reviewerId: 'miyazaki',
@@ -1431,9 +1423,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'Interesting! 一个人有两个名字，就像品牌有不同的定位一样。铁扇仙听起来很神圣，罗刹女听起来很危险。在商业中，我们也需要根据不同的场合展现不同的形象。但关键是要知道什么时候用什么形象。',
+        comment: '一个人两种称呼，就像品牌有不同的定位。关键不是包装，而是内在价值。什么时候用什么形象，要看场景与用户需求，但核心不能变。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1456,9 +1448,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is complicated! 家庭关系在商业中也很重要。牛魔王一家和悟空的关系，就像商业伙伴之间的复杂关系。有时候，私人关系会影响商业决策。关键是要处理好这些关系，不要让个人恩怨影响大局。',
+        comment: '关系是一门学问。家庭、伙伴、旧交都可能影响合作决策，处理不好就会拖累大局。做企业要学会“把事做成”，同时把关系理顺。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1481,9 +1473,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is business! 悟空这就是在保护自己的利益。当有人威胁你的目标时，你必须强硬。我在商场上也是这样，如果有人阻挠我的项目，我绝不会妥协。这是谈判的基本法则。',
+        comment: '这就是“守护核心目标”。当有人威胁到使命，你要坚定立场。但强硬并不是情绪化，而是清晰地知道什么不能让、什么可以谈。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1506,9 +1498,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is emotional! 罗刹女的愤怒是可以理解的。在商业中，如果有人伤害了你的家人或团队，你也会愤怒。但关键是要控制情绪，做出理性的决策。有时候，过去的恩怨不应该影响现在的合作。',
+        comment: '情绪可以理解，但决策要理性。做生意也好，做团队也好，历史恩怨如果处理不好，就会把机会推远。把情绪放下，才能谈成合作。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1531,9 +1523,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is a challenge! 罗刹女提出了一个条件，这就像商业谈判中的考验。有时候，你需要证明自己的能力才能获得合作机会。但关键是要评估这个条件的合理性。',
+        comment: '条件就是门槛。谈判中提出条件并不稀奇，关键是评估对方是否合理、是否可执行。好的合作是双赢，而不是单方面的消耗。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1556,9 +1548,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is unexpected! 有时候在商业中，你也会遇到意想不到的挫折。关键是要快速恢复，找到解决方案。悟空被扇飞了，但他没有放弃，这就是成功者的品质。',
+        comment: '挫折是常态，关键是复盘和快速恢复。被扇飞并不可怕，可怕的是失去信心。真正的创业者能在风暴中稳住方向。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1581,9 +1573,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'Perfect deal! 这就是谈判的艺术！有时候，直接行动比说废话更有效。就像我做生意时，该出手时就出手。但这扇子是假的，说明还是要谨慎验证。Always verify!',
+        comment: '谈判有时需要果断出手，但更重要的是验证。拿到结果不等于解决问题，关键在于结果是否真实可用。商业里最怕的就是“看起来很像”的假解法。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1606,9 +1598,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'Perfect! 这就是成功的喜悦！当你完成一笔大交易时，就是这种感觉。悟空成功借到扇子，立即行动，这就是执行力！在商业中，快速行动、立即执行是关键。但要注意验证 - 因为后面发现是假的。Always verify before celebrating!',
+        comment: '成功的喜悦很自然，但商业里最怕“高兴得太早”。快速行动是对的，但每一步都要验证结果是否靠谱，才不会在最后关头翻车。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1631,9 +1623,9 @@ final Map<int, Comment> comments = {
     annotations: [
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
-        comment: 'This is a lesson! 在商业中，你也要小心假货和虚假信息。就像我常说的，要验证一切。假扇子看起来像真的，但功能完全不同。这提醒我们，表面现象可能具有欺骗性，需要深入验证。Always verify before you trust!',
+        comment: '这是一个提醒：表面看起来像真的，未必是真的。商业里最重要的是验证事实，而不是相信表象。没有数据和结果支撑的东西，都只是“故事”。',
       ),
       Annotation(
         reviewerId: 'luxun',
@@ -1675,10 +1667,10 @@ final Map<int, Comment> janeComments = {
       ),
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
         comment:
-            '好天气，完美的场景，绝佳的“求婚时间点”。相信我，如果你想达成一笔重要“交易”，场景布置很关键。罗切斯特很懂——他不会在暴风雨里开口的，至少表面上不会。',
+            '场景和时机很重要。做大事要选对时机、营造氛围，这是对人的尊重，也是对结果的负责。罗切斯特很会选“窗口期”。',
       ),
     ],
   ),
@@ -1696,10 +1688,10 @@ final Map<int, Comment> janeComments = {
       ),
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
         comment:
-            '聪明的开场！他在找一个话题，避免直接表白。就像商业谈判，你不能一开始就亮底牌，得先找个共同话题。这只蛾子就是他的"开场白"。',
+            '很聪明的开场。谈合作也好谈感情也好，先建立共同语境，才有信任的基础。直接冲到结果，往往把人吓跑。',
       ),
       Annotation(
         reviewerId: 'miyazaki',
@@ -1725,10 +1717,10 @@ final Map<int, Comment> janeComments = {
       ),
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
         comment:
-            '他在做一个“并购要约”——要 100% 控股，毫不掩饰。这点我很欣赏，直截了当，非常诚实。但问题是，他有没有把自己的债务和隐藏风险（比如已经有一段婚姻）写进“招股说明书”？如果没有，那就是严重的信息披露问题。',
+            '他想要“完全拥有”，这在商业里就像全资并购。直白没问题，但前提是信息透明。没有充分披露风险的合作，迟早会出问题。',
       ),
       Annotation(
         reviewerId: 'miyazaki',
@@ -1754,10 +1746,10 @@ final Map<int, Comment> janeComments = {
       ),
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
         comment:
-            '这就是一个非常聪明的谈判。她没有立刻答应，而是反问三次，确认对方是不是“认真的投资者”。在商业里也是一样，你要不断确认对方是不是 long-term 的伙伴，而不是来做一笔快进快出的投机买卖。',
+            '她三连问其实是在做“尽调”。合作之前先确认真诚与长期性，这就是成熟的谈判思维。真正的伙伴是长期主义，而不是一锤子买卖。',
       ),
       Annotation(
         reviewerId: 'miyazaki',
@@ -1783,10 +1775,10 @@ final Map<int, Comment> janeComments = {
       ),
       Annotation(
         reviewerId: 'trump',
-        reviewerName: '唐纳德·特朗普',
+        reviewerName: '马云',
         reviewerAvatar: '💼',
         comment:
-            '如果我是罗切斯特的法律顾问，我会在看到这棵树的那一刻说：“先生，我们有风险信号（red flag）了。”自然界都在提醒你：这桩“并购案”可能要出事。可惜，他没听。',
+            '这就是风险信号。真正做生意的人会把“征兆”当作提醒，提前做准备。很多失败不是因为不知道风险，而是因为选择忽视。',
       ),
       Annotation(
         reviewerId: 'miyazaki',

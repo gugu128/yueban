@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:reading/services/mock_data.dart';
+import 'package:reading/services/mock_data.dart' as mock_data;
 import 'package:reading/services/demo_data.dart';
 import 'package:reading/models/book_content.dart';
 import 'package:reading/utils/text_formatter.dart';
@@ -185,10 +185,10 @@ class _IntentScreenState extends State<IntentScreen> {
             // 意图选项（只在没有聊天消息时显示）
             Expanded(
               child: ListView.separated(
-                itemCount: readingIntents.length,
+                itemCount: mock_data.readingIntents.length,
                 separatorBuilder: (context, index) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
-                  final intent = readingIntents[index];
+                  final intent = mock_data.readingIntents[index];
                   final isSelected = selectedIntent == intent.id;
                   return _IntentCard(
                     intent: intent,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:reading/services/mock_data.dart';
+import 'package:reading/services/mock_data.dart' as mock_data;
 import 'package:reading/models/book_content.dart';
 import 'package:reading/services/server_config.dart';
 
@@ -276,9 +276,9 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSpacing: 16,
               childAspectRatio: 0.8,
             ),
-            itemCount: recentBooks.length,
+            itemCount: mock_data.recentBooks.length,
             itemBuilder: (context, index) {
-              final book = recentBooks[index];
+              final book = mock_data.recentBooks[index];
               return _BookCard(book: book);
             },
           ),

@@ -5,9 +5,30 @@ import 'package:flutter/services.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
-import 'package:reading/services/mock_data.dart';
+import 'package:reading/services/mock_data.dart' as mock_data;
 import 'package:reading/models/book_content.dart';
 import 'package:reading/widgets/ai_dashboard.dart';
+
+class _ChatMessage {
+  final String text;
+  final bool isUser;
+  final String avatar;
+
+  _ChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.avatar,
+  });
+
+  factory _ChatMessage.user(String text, {required String avatar}) {
+    return _ChatMessage(text: text, isUser: true, avatar: avatar);
+  }
+
+  factory _ChatMessage.bot(String text, {required String avatar}) {
+    return _ChatMessage(text: text, isUser: false, avatar: avatar);
+  }
+}
+
 
 class ReaderScreen extends StatefulWidget {
   final String? intent;
@@ -69,11 +90,15 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   Offset? _floatingButtonPosition; // 浮动按钮位置（null 表示未初始化）
   bool _isDragging = false; // 是否正在拖动
   Offset _dragStartGlobalPosition = Offset.zero; // 拖动开始的全局位置
+  final Map<String, List<_ChatMessage>> _companionChats = {};
+  final Map<String, TextEditingController> _chatControllers = {};
 
   @override
   void initState() {
     super.initState();
-    currentRole = widget.selectedCompanions.isNotEmpty ? widget.selectedCompanions.first : roles[0];
+    currentRole = widget.selectedCompanions.isNotEmpty
+        ? widget.selectedCompanions.first
+        : mock_data.roles[0];
     isGroupMode = widget.isGroupMode;
     _pageController = PageController();
     // 初始化灯泡发光动画控制器
@@ -126,30 +151,30 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
 
   List<BookContent> get _activeBookContent {
     if (_isJaneEyre) {
-      return janeEyreContent;
+      return mock_data.janeEyreContent;
     }
-    return bookContent;
+    return mock_data.bookContent;
   }
 
   Map<int, Comment> get _activeComments {
     if (_isJaneEyre) {
-      return janeComments;
+      return mock_data.janeComments;
     }
-    return comments;
+    return mock_data.comments;
   }
 
   List<Chapter> get _activeChapters {
     if (_isJaneEyre) {
-      return janeChapters;
+      return mock_data.janeChapters;
     }
-    return chapters;
+    return mock_data.chapters;
   }
 
   String get _activeFullBookSummary {
     if (_isJaneEyre) {
-      return janeFullBookSummary;
+      return mock_data.janeFullBookSummary;
     }
-    return fullBookSummary;
+    return mock_data.fullBookSummary;
   }
 
   String? _currentPdfAssetPath() {
@@ -201,7 +226,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
       // 针对简·爱节选：优先使用预置英文原文，保证与教案内容一致
       List<String> pages;
       if (_isJaneEyre) {
-        pages = [janeEyreChapter23Text.trim()];
+        pages = [mock_data.janeEyreChapter23Text.trim()];
       } else {
         // 其他 PDF：从 asset 读取 bytes 做文本抽取
         final data = await rootBundle.load(widget.pdfAssetPath!.trim());
@@ -911,9 +936,9 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
       );
     }
 
-    final chapter = chapters.firstWhere(
+    final chapter = _activeChapters.firstWhere(
       (c) => c.chapterNumber == 59,
-      orElse: () => chapters.first,
+      orElse: () => _activeChapters.first,
     );
 
     final imageAssets = const [
@@ -1372,8 +1397,8 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
 
   Widget _buildCatalogPanel() {
     final catalogChapters = _isJaneEyre
-        ? janeChapters
-        : chapters
+        ? _activeChapters
+        : _activeChapters
             .where((c) => c.chapterNumber >= 59 && c.chapterNumber <= 63)
             .toList();
     return Positioned.fill(
@@ -2078,7 +2103,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
     final comment = _activeComments[showCommentIndex];
     if (comment == null) return const SizedBox.shrink();
 
-    // 过滤出特朗普、鲁迅、宫崎骏的评论
+    // 过滤出马云、鲁迅、宫崎骏的评论
     final filteredAnnotations = comment.annotations.where((ann) {
       return ann.reviewerId == 'trump' || 
              ann.reviewerId == 'luxun' || 
@@ -2157,121 +2182,66 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
                       ),
                       // 评论内容
                       Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 高亮文本
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                margin: const EdgeInsets.only(bottom: 16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF3C7).withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: const Color(0xFFFEF3C7),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  comment.content,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF78350F),
-                                    fontFamily: 'serif',
-                                  ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 高亮文本
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              margin: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7).withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFFEF3C7),
+                                  width: 1,
                                 ),
                               ),
-                              // 评论列表
-                              if (filteredAnnotations.isEmpty)
-                                Container(
-                                  padding: const EdgeInsets.all(24),
-                                  child: const Center(
-                                    child: Text(
-                                      '暂无评论',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Color(0xFF9CA3AF),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              else
-                                ...filteredAnnotations.map((annotation) {
-                                  // 根据角色ID获取专属气泡颜色
-                                  Color bubbleColor = _getBubbleColorForRole(annotation.reviewerId);
-                                  
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 20),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // 头像
-                                        Container(
-                                          width: 40,
-                                          height: 40,
-                                          alignment: Alignment.center,
+                              child: Text(
+                                comment.content,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF78350F),
+                                  fontFamily: 'serif',
+                                ),
+                              ),
+                            ),
+                            // 评论列表 + 对话输入
+                            Expanded(
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (filteredAnnotations.isEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.all(24),
+                                        child: const Center(
                                           child: Text(
-                                            annotation.reviewerAvatar,
-                                            style: const TextStyle(fontSize: 28),
+                                            '暂无评论',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Color(0xFF9CA3AF),
+                                            ),
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        // 角色名 + 气泡
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              // 角色名（气泡外）
-                                              Padding(
-                                                padding: const EdgeInsets.only(bottom: 6, left: 4),
-                                                child: Text(
-                                                  annotation.reviewerName,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Color(0xFF6B7280),
-                                                  ),
-                                                ),
-                                              ),
-                                              // 聊天气泡
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                                decoration: BoxDecoration(
-                                                  color: bubbleColor,
-                                                  borderRadius: const BorderRadius.only(
-                                                    topLeft: Radius.circular(6),
-                                                    topRight: Radius.circular(20),
-                                                    bottomLeft: Radius.circular(20),
-                                                    bottomRight: Radius.circular(20),
-                                                  ),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black.withOpacity(0.06),
-                                                      blurRadius: 10,
-                                                      offset: const Offset(0, 2),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: Text(
-                                                  annotation.comment,
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    height: 1.6,
-                                                    color: Color(0xFF1F2937),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                            ],
-                          ),
+                                      )
+                                    else
+                                      ...filteredAnnotations.map((annotation) {
+                                        // 根据角色ID获取专属气泡颜色
+                                        Color bubbleColor = _getBubbleColorForRole(annotation.reviewerId);
+                                        
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 18),
+                                          child: _buildAnnotationWithChat(annotation, bubbleColor),
+                                        );
+                                      }),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -2443,6 +2413,298 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
         ),
       ),
     );
+  }
+
+  Widget _buildAnnotationWithChat(Annotation annotation, Color bubbleColor) {
+    final threadId = _getAnnotationThreadId(annotation);
+    final messages = _companionChats[threadId] ?? _getDefaultChatMessages(annotation);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              child: Text(
+                annotation.reviewerAvatar,
+                style: const TextStyle(fontSize: 28),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6, left: 4),
+                    child: Text(
+                      annotation.reviewerName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: bubbleColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(6),
+                        topRight: Radius.circular(20),
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      annotation.comment,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.6,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildChatThread(
+          threadId: threadId,
+          reviewerName: annotation.reviewerName,
+          reviewerAvatar: annotation.reviewerAvatar,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChatThread({
+    required String threadId,
+    required String reviewerName,
+    required String reviewerAvatar,
+  }) {
+    final showMessages = threadId.startsWith('luxun-17');
+    final messages = showMessages
+        ? (_companionChats[threadId] ?? const <_ChatMessage>[])
+        : const <_ChatMessage>[];
+
+    return Container(
+      margin: const EdgeInsets.only(left: 52),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (messages.isNotEmpty) ...[
+            ...messages.map((message) => _buildChatBubble(message)),
+            const SizedBox(height: 6),
+          ],
+          _buildChatInput(
+            threadId: threadId,
+            reviewerName: reviewerName,
+            reviewerAvatar: reviewerAvatar,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatBubble(_ChatMessage message) {
+    final alignment = message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final bubbleColor = message.isUser ? const Color(0xFFE0F2FE) : const Color(0xFFF3F4F6);
+    final textColor = message.isUser ? const Color(0xFF0F172A) : const Color(0xFF1F2937);
+    final bubbleRadius = message.isUser
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(6),
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          )
+        : const BorderRadius.only(
+            topLeft: Radius.circular(6),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (!message.isUser)
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              margin: const EdgeInsets.only(right: 8, top: 2),
+              child: Text(
+                message.avatar,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          Flexible(
+            child: Text(
+              message.text,
+              style: const TextStyle(
+                fontSize: 13.5,
+                height: 1.7,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+          ),
+          if (message.isUser)
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              margin: const EdgeInsets.only(left: 8, top: 2),
+              child: Text(
+                message.avatar,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatInput({
+    required String threadId,
+    required String reviewerName,
+    required String reviewerAvatar,
+  }) {
+    final controller = _chatControllers.putIfAbsent(
+      threadId,
+      () => TextEditingController(),
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              minLines: 1,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: '输入想问的问题...',
+                hintStyle: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+              ),
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF111827)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              _handleSendMessage(
+                threadId: threadId,
+                reviewerName: reviewerName,
+                reviewerAvatar: reviewerAvatar,
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4F46E5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                '发送',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleSendMessage({
+    required String threadId,
+    required String reviewerName,
+    required String reviewerAvatar,
+  }) {
+    final controller = _chatControllers[threadId];
+    if (controller == null) return;
+    final text = controller.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      final messages = _companionChats.putIfAbsent(
+        threadId,
+        () => List<_ChatMessage>.from(_getDefaultChatMessagesByThread(threadId)),
+      );
+      messages.add(_ChatMessage.user(text, avatar: '🙂'));
+      messages.add(
+        _ChatMessage.bot(
+          _generateRoleReply(threadId, text),
+          avatar: reviewerAvatar,
+        ),
+      );
+      controller.clear();
+    });
+  }
+
+  String _getAnnotationThreadId(Annotation annotation) {
+    final contentId = showCommentIndex ?? 0;
+    return '${annotation.reviewerId}-$contentId';
+  }
+
+  List<_ChatMessage> _getDefaultChatMessages(Annotation annotation) {
+    final threadId = _getAnnotationThreadId(annotation);
+    return _getDefaultChatMessagesByThread(threadId);
+  }
+
+  List<_ChatMessage> _getDefaultChatMessagesByThread(String threadId) {
+    if (threadId.startsWith('luxun-17')) {
+      return [];
+    }
+
+    return [
+      _ChatMessage.bot(
+        '我在这里等你发问。想从哪个角度聊聊？',
+        avatar: '💬',
+      ),
+    ];
+  }
+
+  String _generateRoleReply(String threadId, String userText) {
+    if (threadId.startsWith('luxun-17')) {
+      if (userText.contains('看清掌扇的人之后')) {
+        return '之后就别只停在“知道”，还要想办法“不再依赖”。先从三件事起：一是少欠那把扇子的情，把生计的一小块握回自己手里；二是互相结伴，把同样受困的人拢成一股力；三是学会识破“灵药”的话术，不再用迷信麻醉自己。能结伴就结伴，能自救就自救，把日子过成自己能掌的局面。简单说，就是把希望从“别人施舍”转回“自己能做什么”。';
+      }
+      return '要是真想走出火焰山，先别去问哪里有“扇子”。你得问：谁让你离不开扇子。看清掌扇的人，才谈得上怎么过这道关。简单来说，就是先看清是谁把路变成火焰山、谁在垄断“解药”，再谈怎么自救，而不是把希望全押在别人的施舍上。';
+    }
+
+    return '收到你的想法。我会继续从文本里找线索，也欢迎你继续追问。';
   }
 
   Widget _buildKnowledgeCard() {
