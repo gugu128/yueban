@@ -29,6 +29,33 @@ class _ChatTabState extends State<ChatTab> {
   final TextEditingController _inputController = TextEditingController();
   final List<ChatMessage> _messages = [];
   bool _hasShownExamGuide = false;
+
+  bool _isImageAvatar(String avatar) {
+    return avatar.startsWith('assets/');
+  }
+
+  Widget _buildRoleAvatar(String avatar, {double size = 16}) {
+    if (_isImageAvatar(avatar)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(size / 2),
+        child: Image.asset(
+          avatar,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.person,
+            size: size,
+            color: const Color(0xFF6B7280),
+          ),
+        ),
+      );
+    }
+    return Text(
+      avatar,
+      style: TextStyle(fontSize: size),
+    );
+  }
   // 记录每个角色的对话索引，按顺序回复
   final Map<String, int> _roleDialogueIndex = {};
   // 记录群聊当前显示到第几轮（0表示还没开始）
@@ -227,8 +254,7 @@ class _ChatTabState extends State<ChatTab> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(role.avatar,
-                                  style: const TextStyle(fontSize: 16)),
+                              _buildRoleAvatar(role.avatar, size: 20),
                               const SizedBox(width: 6),
                               Text(
                                 role.name,
@@ -521,14 +547,22 @@ class _ChatTabState extends State<ChatTab> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFF4F46E5),
+                color: Colors.white,
+                border: Border.all(color: const Color(0xFFE5E7EB)),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Center(
-                child: Icon(
-                  Icons.person,
-                  size: 16,
-                  color: Colors.white,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/images/yonghu.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Icon(
+                      Icons.person,
+                      size: 16,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -583,10 +617,7 @@ class _ChatTabState extends State<ChatTab> {
               ],
             ),
             child: Center(
-              child: Text(
-                role.avatar,
-                style: const TextStyle(fontSize: 16),
-              ),
+              child: _buildRoleAvatar(role.avatar, size: 24),
             ),
           ),
           const SizedBox(width: 12),

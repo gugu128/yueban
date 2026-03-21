@@ -20,6 +20,33 @@ class _CompanionSelectionScreenState extends State<CompanionSelectionScreen> {
   final Set<String> selectedRoleIds = {};
   bool _showRecommendationHint = true;
 
+  bool _isImageAvatar(String avatar) {
+    return avatar.startsWith('assets/');
+  }
+
+  Widget _buildRoleAvatar(String avatar, {double size = 32}) {
+    if (_isImageAvatar(avatar)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(size / 2),
+        child: Image.asset(
+          avatar,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.person,
+            size: size * 0.75,
+            color: const Color(0xFF6B7280),
+          ),
+        ),
+      );
+    }
+    return Text(
+      avatar,
+      style: TextStyle(fontSize: size * 0.66),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -140,10 +167,7 @@ class _CompanionSelectionScreenState extends State<CompanionSelectionScreen> {
                           ),
                           child: Column(
                             children: [
-                              Text(
-                                role.avatar,
-                                style: const TextStyle(fontSize: 32),
-                              ),
+                              _buildRoleAvatar(role.avatar, size: 48),
                               const SizedBox(height: 8),
                               Text(
                                 role.name,

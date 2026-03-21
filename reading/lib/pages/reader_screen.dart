@@ -2072,6 +2072,62 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
     });
   }
 
+  String _getReviewerAvatarById(String reviewerId, String fallbackAvatar) {
+    switch (reviewerId) {
+      case 'wukong':
+      case 'wukong_reviewer':
+        return 'assets/images/sunwukong.png';
+      case 'lindaiyu':
+        return 'assets/images/lindaiyu.png';
+      case 'luxun':
+        return 'assets/images/luxun.png';
+      case 'musk':
+        return 'assets/images/masike.png';
+      case 'goggins':
+        return 'assets/images/daweigejinsi.png';
+      case 'socrates':
+      case 'socrates_reviewer':
+        return 'assets/images/sugeladi.png';
+      case 'mayun':
+      case 'trump':
+        return 'assets/images/mayun.png';
+      case 'turing':
+        return 'assets/images/tuling.png';
+      case 'miyazaki':
+        return 'assets/images/gongqijun.png';
+      case 'wangyangming':
+        return 'assets/images/wangyangming.png';
+      case 'kobe':
+        return 'assets/images/kebi.png';
+      default:
+        return fallbackAvatar;
+    }
+  }
+
+  Widget _buildAvatarWidget(String avatar, {double size = 24}) {
+    if (avatar.startsWith('assets/')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(size / 2),
+        child: Image.asset(
+          avatar,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.person,
+            size: size * 0.8,
+            color: const Color(0xFF6B7280),
+          ),
+        ),
+      );
+    }
+
+    return Text(
+      avatar,
+      style: TextStyle(fontSize: size * 0.75),
+    );
+  }
+
   // 根据角色ID返回专属的浅色气泡颜色
   Color _getBubbleColorForRole(String reviewerId) {
     switch (reviewerId) {
@@ -2429,9 +2485,12 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
               width: 40,
               height: 40,
               alignment: Alignment.center,
-              child: Text(
-                annotation.reviewerAvatar,
-                style: const TextStyle(fontSize: 28),
+              child: _buildAvatarWidget(
+                _getReviewerAvatarById(
+                  annotation.reviewerId,
+                  annotation.reviewerAvatar,
+                ),
+                size: 36,
               ),
             ),
             const SizedBox(width: 12),
@@ -2486,7 +2545,10 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
         _buildChatThread(
           threadId: threadId,
           reviewerName: annotation.reviewerName,
-          reviewerAvatar: annotation.reviewerAvatar,
+          reviewerAvatar: _getReviewerAvatarById(
+            annotation.reviewerId,
+            annotation.reviewerAvatar,
+          ),
         ),
       ],
     );
@@ -2552,10 +2614,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
               height: 24,
               alignment: Alignment.center,
               margin: const EdgeInsets.only(right: 8, top: 2),
-              child: Text(
-                message.avatar,
-                style: const TextStyle(fontSize: 18),
-              ),
+              child: _buildAvatarWidget(message.avatar, size: 22),
             ),
           Flexible(
             child: Text(
@@ -2573,10 +2632,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
               height: 24,
               alignment: Alignment.center,
               margin: const EdgeInsets.only(left: 8, top: 2),
-              child: Text(
-                message.avatar,
-                style: const TextStyle(fontSize: 18),
-              ),
+              child: _buildAvatarWidget(message.avatar, size: 22),
             ),
         ],
       ),
@@ -2662,7 +2718,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
         threadId,
         () => List<_ChatMessage>.from(_getDefaultChatMessagesByThread(threadId)),
       );
-      messages.add(_ChatMessage.user(text, avatar: '🙂'));
+      messages.add(_ChatMessage.user(text, avatar: 'assets/images/yonghu.png'));
       messages.add(
         _ChatMessage.bot(
           _generateRoleReply(threadId, text),

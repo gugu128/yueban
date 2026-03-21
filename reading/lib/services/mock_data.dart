@@ -327,7 +327,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'lindaiyu',
     name: '林黛玉',
-    avatar: '🌸',
+    avatar: 'assets/images/lindaiyu.png',
     style: '多愁善感、才情横溢',
     colorClass: 'pink',
     greeting: '此情此景，真叫人感慨万千...你觉得书中人物的命运如何？有什么想和我探讨的？',
@@ -335,7 +335,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'wukong',
     name: '孙悟空',
-    avatar: '🐵',
+    avatar: 'assets/images/sunwukong.png',
     style: '调皮、自大但通透',
     colorClass: 'yellow',
     greeting: '俺老孙看这书，甚是有趣！你想问俺什么？这情节俺见得多了，你想听听俺的看法吗？',
@@ -343,7 +343,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'luxun',
     name: '鲁迅',
-    avatar: '📚',
+    avatar: 'assets/images/luxun.png',
     style: '犀利批判、深刻洞察',
     colorClass: 'black',
     greeting: '从社会现实来看，这反映了很多深刻的问题。你有什么看法？想听听我的分析吗？',
@@ -351,7 +351,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'musk',
     name: '埃隆·马斯克',
-    avatar: '🚀',
+    avatar: 'assets/images/masike.png',
     style: '科技狂人、创新思维',
     colorClass: 'blue',
     greeting: '从技术创新角度看，这个情节很有想象力！有什么科技相关的问题想讨论吗？',
@@ -359,7 +359,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'goggins',
     name: '大卫·戈金斯',
-    avatar: '💪',
+    avatar: 'assets/images/daweigejinsi.png',
     style: '坚韧不拔、意志强大',
     colorClass: 'orange',
     greeting: '没有借口，只有行动！这段情节让我看到了坚韧的力量。你想聊聊如何坚持下去吗？',
@@ -367,7 +367,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'socrates',
     name: '苏格拉底',
-    avatar: '🏛️',
+    avatar: 'assets/images/sugeladi.png',
     style: '追问、反思',
     colorClass: 'purple',
     greeting: '你读到了文字，但你读懂了真理吗？让我们探讨一番——这段内容让你想到了什么？',
@@ -375,7 +375,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'mayun',
     name: '马云',
-    avatar: '💼',
+    avatar: 'assets/images/mayun.png',
     style: '商业智慧、战略思维',
     colorClass: 'green',
     greeting: '从商业角度看，这里有很多启发。你觉得这个情节背后的逻辑是什么？想听听我的见解吗？',
@@ -383,7 +383,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'turing',
     name: '图灵',
-    avatar: '🤖',
+    avatar: 'assets/images/tuling.png',
     style: '逻辑严密、理性分析',
     colorClass: 'cyan',
     greeting: '让我们用逻辑来思考这个问题。你认为这段情节的因果关系是什么？有什么想分析的？',
@@ -391,7 +391,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'miyazaki',
     name: '宫崎骏',
-    avatar: '🎨',
+    avatar: 'assets/images/gongqijun.png',
     style: '想象力丰富、充满童真',
     colorClass: 'teal',
     greeting: '这个世界充满了想象力，不是吗？你想和我一起探讨这段情节中的奇妙之处吗？',
@@ -399,7 +399,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'wangyangming',
     name: '王阳明',
-    avatar: '🧘',
+    avatar: 'assets/images/wangyangming.png',
     style: '知行合一、心学智慧',
     colorClass: 'indigo',
     greeting: '知行合一，方能明理。这段内容对你有什么启发？想和我聊聊其中的道理吗？',
@@ -407,7 +407,7 @@ final List<Role> allCompanionRoles = [
   Role(
     id: 'kobe',
     name: '科比·布莱恩特',
-    avatar: '🏀',
+    avatar: 'assets/images/kebi.png',
     style: '专注、执着、永不放弃',
     colorClass: 'red',
     greeting: '曼巴精神，永不言弃！这段情节让我看到了拼搏的力量。你想聊聊如何保持专注吗？',
@@ -422,7 +422,7 @@ final List<Role> reviewers = [
   Role(
     id: 'musk',
     name: '马斯克',
-    avatar: '🚀',
+    avatar: 'assets/images/masike.png',
     style: '科技狂人、创新思维',
     colorClass: 'blue',
     greeting: '从技术创新角度看，这个情节很有意思...',
@@ -430,7 +430,7 @@ final List<Role> reviewers = [
   Role(
     id: 'mayun',
     name: '马云',
-    avatar: '💼',
+    avatar: 'assets/images/mayun.png',
     style: '商业智慧、战略思维',
     colorClass: 'green',
     greeting: '从商业和长期主义角度看，这段情节很有启发，你怎么看？',
@@ -438,7 +438,7 @@ final List<Role> reviewers = [
   Role(
     id: 'lindaiyu',
     name: '林黛玉',
-    avatar: '🌸',
+    avatar: 'assets/images/lindaiyu.png',
     style: '多愁善感、才情横溢',
     colorClass: 'pink',
     greeting: '如此遭遇，真叫人怜惜...',
@@ -446,7 +446,7 @@ final List<Role> reviewers = [
   Role(
     id: 'wukong_reviewer',
     name: '孙悟空',
-    avatar: '🐵',
+    avatar: 'assets/images/sunwukong.png',
     style: '亲历者视角、江湖豪情',
     colorClass: 'yellow',
     greeting: '这说的就是俺老孙的经历...',
@@ -454,7 +454,7 @@ final List<Role> reviewers = [
   Role(
     id: 'socrates_reviewer',
     name: '苏格拉底',
-    avatar: '🏛️',
+    avatar: 'assets/images/sugeladi.png',
     style: '哲学思辨、追问真理',
     colorClass: 'purple',
     greeting: '让我们思考一下这里的本质...',
@@ -462,7 +462,7 @@ final List<Role> reviewers = [
   Role(
     id: 'luxun',
     name: '鲁迅',
-    avatar: '📚',
+    avatar: 'assets/images/luxun.png',
     style: '犀利批判、深刻洞察',
     colorClass: 'black',
     greeting: '从社会现实来看，这反映了...',
