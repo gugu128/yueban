@@ -15,9 +15,10 @@ class ChatMessage {
 }
 
 class IntentScreen extends StatefulWidget {
+  final String scenarioId;
   final Function(String) onConfirm;
 
-  const IntentScreen({super.key, required this.onConfirm});
+  const IntentScreen({super.key, required this.scenarioId, required this.onConfirm});
 
   @override
   State<IntentScreen> createState() => _IntentScreenState();
@@ -39,29 +40,28 @@ class _IntentScreenState extends State<IntentScreen> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    // 添加用户消息
     setState(() {
-      _chatMessages.add(ChatMessage(
-        content: text,
-        isUser: true,
-      ));
+      _chatMessages.add(ChatMessage(content: text, isUser: true));
     });
 
     _textController.clear();
 
-    // 检查是否是备考请求
     if (text.contains('备考') || text.contains('学习') || text.contains('考试')) {
       setState(() {
-        selectedIntent = 'exam'; // 自动选择备考意图
+        selectedIntent = 'exam';
       });
     }
 
-    // AI回复
+    final reply = buildReadingIntentReply(
+      scenarioId: widget.scenarioId,
+      userIntent: text,
+    );
+
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {
           _chatMessages.add(ChatMessage(
-            content: aiWelcomeMessage,
+            content: reply,
             isUser: false,
           ));
           _hasReceivedReply = true;
@@ -273,7 +273,7 @@ class _IntentScreenState extends State<IntentScreen> {
                 elevation: (_hasReceivedReply || selectedIntent != null) ? 8 : 0,
               ),
               child: const Text(
-                '开始深度阅读',
+                '开始阅读',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

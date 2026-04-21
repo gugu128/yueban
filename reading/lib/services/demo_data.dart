@@ -8,6 +8,50 @@ const String aiWelcomeMessage = '''好的，收到！
 
 准备好了吗？那让我们开始阅读吧！''';
 
+String buildReadingIntentReply({
+  required String scenarioId,
+  required String userIntent,
+}) {
+  final intent = userIntent.trim();
+
+  switch (scenarioId) {
+    case 'xyj':
+      return '''收到，你的阅读意图是：$intent。
+
+这一回《西游记》会特别适合你从“人物关系”“冲突推进”和“解决问题的方法”三个角度去读。
+我会帮你关注孙悟空如何借扇、铁扇公主为何拒扇，以及真假扇背后隐藏的策略与代价。
+
+那我们开始阅读吧！''';
+    case 'jane_eyre':
+      return '''收到，你的阅读意图是：$intent。
+
+这段《简·爱》节选里，最值得关注的是简·爱如何在爱情面前保持理性、尊严与平等意识。
+我会帮你留意她和罗切斯特的对话、象征意象，以及“真诚”与“自我”之间的拉扯。
+
+那我们开始阅读吧！''';
+    case 'paper':
+      return '''收到，你的阅读意图是：$intent。
+
+这篇学术论文阅读时，建议你重点抓住研究问题、论证结构、关键术语和结论部分。
+如果你想做笔记，我也会尽量帮你把核心观点整理得更清楚，方便你快速提炼重点。
+
+那我们开始阅读吧！''';
+    case 'cartoon':
+      return '''收到，你的阅读意图是：$intent。
+
+这次漫画阅读，我会帮你关注画面信息、人物表情、情节反转和隐藏情绪。
+就算没有很多文字，也能一起把“画里没说出口的意思”读出来。
+
+那我们开始阅读吧！''';
+    default:
+      return '''好的，收到你的阅读意图：$intent。
+
+我会根据你的目标调整阅读方式，帮你抓重点、理思路、看细节。
+
+那我们开始阅读吧！''';
+  }
+}
+
 // 2. AI探讨（考点梳理）
 const String aiExamGuideContent = '''收到！针对中考名著阅读，《西游记》第五十九回是极高频的考点。以下是为你整理的**"满分"笔记**：
 

@@ -50,7 +50,7 @@ class _AppContainerState extends State<AppContainer> {
   bool isGroupMode = false;
   String? pdfAssetPath;
   String? pendingFileName;
-
+  String? entrySource; // upload / photo
   void navigateTo(
     String screen, {
     String? intent,
@@ -58,6 +58,7 @@ class _AppContainerState extends State<AppContainer> {
     bool? groupMode,
     String? pdfPath,
     String? fileName,
+    String? source,
   }) {
     setState(() {
       currentScreen = screen;
@@ -75,6 +76,9 @@ class _AppContainerState extends State<AppContainer> {
       }
       if (fileName != null) {
         pendingFileName = fileName;
+      }
+      if (source != null) {
+        entrySource = source;
       }
     });
   }
@@ -107,24 +111,28 @@ class _AppContainerState extends State<AppContainer> {
                 'intent',
                 pdfPath: 'assets/PDF/Jane Eyre Selected Chapters.pdf',
                 fileName: fileName,
+                source: 'upload',
               );
             } else if (normalized == 'journey to the west.pdf') {
               navigateTo(
                 'intent',
                 pdfPath: 'assets/PDF/Journey to the West.pdf',
                 fileName: fileName,
+                source: 'upload',
               );
             } else if (normalized == 'paper.pdf') {
               navigateTo(
                 'intent',
                 pdfPath: 'assets/PDF/paper.pdf',
                 fileName: fileName,
+                source: 'upload',
               );
             } else if (normalized == 'cartoon.png') {
               navigateTo(
                 'intent',
                 pdfPath: '__cartoon__',
                 fileName: fileName,
+                source: 'upload',
               );
             } else {
               navigateTo('scan', pdfPath: '__doc_chooser__');
@@ -134,16 +142,22 @@ class _AppContainerState extends State<AppContainer> {
       case 'scan':
         final isDocChooser = pdfAssetPath == '__doc_chooser__';
         return ScanScreen(
-          onFinish: () => navigateTo('intent'),
+          onFinish: () => navigateTo('intent', source: 'photo', pdfPath: 'assets/PDF/Journey to the West.pdf'),
           showDocChooser: isDocChooser,
-          onChooseA: isDocChooser ? () => navigateTo('intent', pdfPath: 'assets/PDF/paper.pdf') : null,
+          onChooseA: isDocChooser ? () => navigateTo('intent', pdfPath: 'assets/PDF/paper.pdf', source: 'upload') : null,
           onChooseB: isDocChooser
-              ? () => navigateTo('intent', pdfPath: 'assets/PDF/Jane Eyre Selected Chapters.pdf')
+              ? () => navigateTo('intent', pdfPath: 'assets/PDF/Jane Eyre Selected Chapters.pdf', source: 'upload')
               : null,
-          onChooseC: isDocChooser ? () => navigateTo('intent', pdfPath: '__cartoon__') : null,
+          onChooseC: isDocChooser ? () => navigateTo('intent', pdfPath: '__cartoon__', source: 'upload') : null,
         );
       case 'intent':
+        final scenarioId = pdfAssetPath == 'assets/PDF/Jane Eyre Selected Chapters.pdf'
+            ? 'jane_eyre'
+            : (pdfAssetPath == '__cartoon__'
+                ? 'cartoon'
+                : (pdfAssetPath == 'assets/PDF/paper.pdf' ? 'paper' : 'xyj'));
         return IntentScreen(
+          scenarioId: scenarioId,
           onConfirm: (intent) => navigateTo('companion', intent: intent),
         );
       case 'companion':
@@ -156,14 +170,16 @@ class _AppContainerState extends State<AppContainer> {
                       : (pdfAssetPath!.contains('Journey to the West') ? 'xyj' : 'paper'))
                   : 'xyj'),
           onConfirm: (companions, groupMode) {
+            final isJourneyUpload = pdfAssetPath == 'assets/PDF/Journey to the West.pdf' && entrySource == 'upload';
             if (pdfAssetPath == '__cartoon__') {
               navigateTo('cartoon_reader', companions: companions, groupMode: groupMode);
             } else if (pdfAssetPath != null && pdfAssetPath != '__doc_chooser__') {
               final isJane = pdfAssetPath!.contains('Jane Eyre');
-              final isJourney = pdfAssetPath!.contains('Journey to the West');
               if (isJane) {
                 navigateTo('pdf_reader', companions: companions, groupMode: groupMode);
-              } else if (isJourney) {
+              } else if (isJourneyUpload) {
+                navigateTo('reader', companions: companions, groupMode: groupMode);
+              } else if (pdfAssetPath!.contains('Journey to the West')) {
                 navigateTo('reader', companions: companions, groupMode: groupMode);
               } else {
                 navigateTo('pdf_reader', companions: companions, groupMode: groupMode);
@@ -179,7 +195,7 @@ class _AppContainerState extends State<AppContainer> {
           selectedCompanions: selectedCompanions,
           isGroupMode: isGroupMode,
           onBack: () => navigateTo('home'),
-          bookId: pdfAssetPath == 'assets/PDF/Journey to the West.pdf' ? 'xyj' : 'xyj',
+          bookId: 'xyj',
           pdfAssetPath: pdfAssetPath == 'assets/PDF/Journey to the West.pdf'
               ? 'assets/PDF/Journey to the West.pdf'
               : null,
