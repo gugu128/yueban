@@ -443,21 +443,23 @@ class _ChatTabState extends State<ChatTab> {
     }
 
     final round = groupChatRounds[_groupChatRoundIndex];
-    final trump = widget.selectedCompanions.firstWhere((r) => r.id == 'trump', orElse: () => widget.selectedCompanions.first);
-    final luxun = widget.selectedCompanions.firstWhere((r) => r.id == 'luxun', orElse: () => widget.selectedCompanions.first);
-    final miyazaki = widget.selectedCompanions.firstWhere((r) => r.id == 'miyazaki', orElse: () => widget.selectedCompanions.first);
+
+    // 仅在已选择角色中精确匹配，避免错误地回退到第一个角色（导致同一角色重复发言）
+    final Map<String, Role> selectedRoleMap = {
+      for (final role in widget.selectedCompanions) role.id: role,
+    };
 
     int delay = 500;
-    
+
     // 不显示轮次标题，直接添加这一轮的消息
     for (var msg in round.messages) {
-      Role? role;
-      if (msg.roleId == 'trump') {
-        role = trump;
-      } else if (msg.roleId == 'luxun') {
-        role = luxun;
-      } else if (msg.roleId == 'miyazaki') {
-        role = miyazaki;
+      Role? role = selectedRoleMap[msg.roleId];
+
+      // 兼容旧数据：trump 与 mayun 互为别名
+      if (role == null && msg.roleId == 'trump') {
+        role = selectedRoleMap['mayun'];
+      } else if (role == null && msg.roleId == 'mayun') {
+        role = selectedRoleMap['trump'];
       }
 
       if (role != null) {

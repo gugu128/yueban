@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:reading/pages/home_screen.dart';
 import 'package:reading/pages/scan_screen.dart';
 import 'package:reading/pages/intent_screen.dart';
 import 'package:reading/pages/companion_selection_screen.dart';
 import 'package:reading/pages/reader_screen.dart';
+import 'package:reading/pages/analysis_screen.dart';
 import 'package:reading/models/book_content.dart';
 
 void main() {
@@ -47,6 +49,7 @@ class _AppContainerState extends State<AppContainer> {
   List<Role> selectedCompanions = [];
   bool isGroupMode = false;
   String? pdfAssetPath;
+  String? pendingFileName;
 
   void navigateTo(
     String screen, {
@@ -54,6 +57,7 @@ class _AppContainerState extends State<AppContainer> {
     List<Role>? companions,
     bool? groupMode,
     String? pdfPath,
+    String? fileName,
   }) {
     setState(() {
       currentScreen = screen;
@@ -68,6 +72,9 @@ class _AppContainerState extends State<AppContainer> {
       }
       if (pdfPath != null) {
         pdfAssetPath = pdfPath;
+      }
+      if (fileName != null) {
+        pendingFileName = fileName;
       }
     });
   }
@@ -84,7 +91,45 @@ class _AppContainerState extends State<AppContainer> {
       case 'home':
         return HomeScreen(
           onScan: () => navigateTo('scan'),
-          onUpload: () => navigateTo('scan', pdfPath: '__doc_chooser__'),
+          onUpload: _pickDocumentAndNavigate,
+        );
+      case 'analysis':
+        final fileName = pendingFileName ?? '';
+        final cfg = _analysisConfigFor(fileName);
+        return AnalysisScreen(
+          title: cfg.$1,
+          subtitle: cfg.$2,
+          duration: cfg.$3,
+          onFinished: () {
+            final normalized = fileName.toLowerCase();
+            if (normalized == 'jane eyre selected chapters.pdf') {
+              navigateTo(
+                'intent',
+                pdfPath: 'assets/PDF/Jane Eyre Selected Chapters.pdf',
+                fileName: fileName,
+              );
+            } else if (normalized == 'journey to the west.pdf') {
+              navigateTo(
+                'intent',
+                pdfPath: 'assets/PDF/Journey to the West.pdf',
+                fileName: fileName,
+              );
+            } else if (normalized == 'paper.pdf') {
+              navigateTo(
+                'intent',
+                pdfPath: 'assets/PDF/paper.pdf',
+                fileName: fileName,
+              );
+            } else if (normalized == 'cartoon.png') {
+              navigateTo(
+                'intent',
+                pdfPath: '__cartoon__',
+                fileName: fileName,
+              );
+            } else {
+              navigateTo('scan', pdfPath: '__doc_chooser__');
+            }
+          },
         );
       case 'scan':
         final isDocChooser = pdfAssetPath == '__doc_chooser__';
@@ -106,16 +151,23 @@ class _AppContainerState extends State<AppContainer> {
           bookId: pdfAssetPath == '__cartoon__'
               ? 'cartoon'
               : (pdfAssetPath != null && pdfAssetPath != '__doc_chooser__'
-                  ? (pdfAssetPath!.contains('Jane Eyre') ? 'jane_eyre' : 'paper')
+                  ? (pdfAssetPath!.contains('Jane Eyre')
+                      ? 'jane_eyre'
+                      : (pdfAssetPath!.contains('Journey to the West') ? 'xyj' : 'paper'))
                   : 'xyj'),
           onConfirm: (companions, groupMode) {
-            // 如果是cartoon模式，跳转到cartoon_reader
             if (pdfAssetPath == '__cartoon__') {
               navigateTo('cartoon_reader', companions: companions, groupMode: groupMode);
-            }
-            // 如果有 PDF 路径，跳转到 pdf_reader；否则跳转到 reader（西游记）
-            else if (pdfAssetPath != null && pdfAssetPath != '__doc_chooser__') {
-              navigateTo('pdf_reader', companions: companions, groupMode: groupMode);
+            } else if (pdfAssetPath != null && pdfAssetPath != '__doc_chooser__') {
+              final isJane = pdfAssetPath!.contains('Jane Eyre');
+              final isJourney = pdfAssetPath!.contains('Journey to the West');
+              if (isJane) {
+                navigateTo('pdf_reader', companions: companions, groupMode: groupMode);
+              } else if (isJourney) {
+                navigateTo('reader', companions: companions, groupMode: groupMode);
+              } else {
+                navigateTo('pdf_reader', companions: companions, groupMode: groupMode);
+              }
             } else {
               navigateTo('reader', companions: companions, groupMode: groupMode);
             }
@@ -127,12 +179,14 @@ class _AppContainerState extends State<AppContainer> {
           selectedCompanions: selectedCompanions,
           isGroupMode: isGroupMode,
           onBack: () => navigateTo('home'),
-          bookId: 'xyj',
+          bookId: pdfAssetPath == 'assets/PDF/Journey to the West.pdf' ? 'xyj' : 'xyj',
+          pdfAssetPath: pdfAssetPath == 'assets/PDF/Journey to the West.pdf'
+              ? 'assets/PDF/Journey to the West.pdf'
+              : null,
         );
       case 'pdf_reader':
         final path = pdfAssetPath ?? 'assets/PDF/paper.pdf';
-        final bookId =
-            path.contains('Jane Eyre') ? 'jane_eyre' : 'paper';
+        final bookId = path.contains('Jane Eyre') ? 'jane_eyre' : 'paper';
         return ReaderScreen(
           intent: selectedIntent,
           pdfAssetPath: path,
@@ -153,9 +207,62 @@ class _AppContainerState extends State<AppContainer> {
       default:
         return HomeScreen(
           onScan: () => navigateTo('scan'),
-          onUpload: () => navigateTo('scan', pdfPath: '__doc_chooser__'),
+          onUpload: _pickDocumentAndNavigate,
         );
     }
+  }
+
+  Future<void> _pickDocumentAndNavigate() async {
+    final result = await FilePicker.platform.pickFiles(
+      dialogTitle: '选择要上传的文档',
+      allowMultiple: false,
+      type: FileType.any,
+      withData: false,
+    );
+
+    if (!mounted || result == null || result.files.isEmpty) {
+      return;
+    }
+
+    final fileName = result.files.first.name;
+    navigateTo('analysis', fileName: fileName);
+  }
+
+  (String, String, Duration) _analysisConfigFor(String fileName) {
+    final normalized = fileName.toLowerCase();
+    if (normalized == 'jane eyre selected chapters.pdf') {
+      return (
+        '正在分析《简爱》节选',
+        '系统正在识别章节、人物关系与可阅读段落...',
+        const Duration(seconds: 2),
+      );
+    }
+    if (normalized == 'journey to the west.pdf') {
+      return (
+        '正在分析《西游记》文档',
+        '系统正在识别回目、人物与段落结构...',
+        const Duration(milliseconds: 1500),
+      );
+    }
+    if (normalized == 'paper.pdf') {
+      return (
+        '正在分析论文',
+        '系统正在识别摘要、标题与知识点...',
+        const Duration(milliseconds: 1500),
+      );
+    }
+    if (normalized == 'cartoon.png') {
+      return (
+        '正在分析漫画图片',
+        '系统正在识别画面元素与主题含义...',
+        const Duration(milliseconds: 1500),
+      );
+    }
+    return (
+      '正在分析文档',
+      '系统正在识别文档类型与内容...',
+      const Duration(milliseconds: 1200),
+    );
   }
 }
 

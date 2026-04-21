@@ -3,9 +3,10 @@ import 'package:reading/services/mock_data.dart' as mock_data;
 import 'package:reading/models/book_content.dart';
 import 'package:reading/services/server_config.dart';
 
+
 class HomeScreen extends StatefulWidget {
   final VoidCallback onScan;
-  final VoidCallback onUpload;
+  final Future<void> Function() onUpload;
 
   const HomeScreen({super.key, required this.onScan, required this.onUpload});
 
@@ -129,8 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
             // 上传文档按钮（大）
             Expanded(
               child: GestureDetector(
-                onTap: () {
-                  widget.onUpload();
+                onTap: () async {
+                  await widget.onUpload();
                 },
                 child: Container(
                   height: 120,

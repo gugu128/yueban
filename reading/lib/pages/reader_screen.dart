@@ -117,7 +117,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
 
     // 如果是 PDF 阅读模式：提前把 asset 拷贝到临时文件（flutter_pdfview 需要 filePath）
     // - 上传论文：widget.pdfAssetPath != null
-    // - 西游记：默认 _xyjPdfMode=true 时使用 assets/PDF/xyj.PDF
+    // - 西游记：默认 _xyjPdfMode=true 时使用 assets/PDF/Journey to the West.pdf
     final initialPdfAsset = _currentPdfAssetPath();
     if (initialPdfAsset != null) {
       _preparePdf(initialPdfAsset);
@@ -181,7 +181,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
     final paper = widget.pdfAssetPath?.trim();
     if (paper != null && paper.isNotEmpty) return paper;
     // 只有在“西游记默认阅读页”才走这个逻辑
-    if (_xyjPdfMode) return 'assets/PDF/xyj.pdf';
+    if (_xyjPdfMode) return 'assets/PDF/Journey to the West.pdf';
     return null;
   }
 
