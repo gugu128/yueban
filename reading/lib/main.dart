@@ -118,7 +118,7 @@ class _AppContainerState extends State<AppContainer> {
                 'intent',
                 pdfPath: 'assets/PDF/Journey to the West.pdf',
                 fileName: fileName,
-                source: 'upload',
+                source: 'photo',
               );
             } else if (normalized == 'paper.pdf') {
               navigateTo(
@@ -170,22 +170,30 @@ class _AppContainerState extends State<AppContainer> {
                       : (pdfAssetPath!.contains('Journey to the West') ? 'xyj' : 'paper'))
                   : 'xyj'),
           onConfirm: (companions, groupMode) {
-            final isJourneyUpload = pdfAssetPath == 'assets/PDF/Journey to the West.pdf' && entrySource == 'upload';
+            final isJourney = pdfAssetPath == 'assets/PDF/Journey to the West.pdf';
             if (pdfAssetPath == '__cartoon__') {
               navigateTo('cartoon_reader', companions: companions, groupMode: groupMode);
             } else if (pdfAssetPath != null && pdfAssetPath != '__doc_chooser__') {
               final isJane = pdfAssetPath!.contains('Jane Eyre');
               if (isJane) {
                 navigateTo('pdf_reader', companions: companions, groupMode: groupMode);
-              } else if (isJourneyUpload) {
-                navigateTo('reader', companions: companions, groupMode: groupMode);
-              } else if (pdfAssetPath!.contains('Journey to the West')) {
-                navigateTo('reader', companions: companions, groupMode: groupMode);
+              } else if (isJourney) {
+                navigateTo(
+                  'reader',
+                  companions: companions,
+                  groupMode: groupMode,
+                  pdfPath: 'assets/PDF/Journey to the West.pdf',
+                );
               } else {
                 navigateTo('pdf_reader', companions: companions, groupMode: groupMode);
               }
             } else {
-              navigateTo('reader', companions: companions, groupMode: groupMode);
+              navigateTo(
+                'reader',
+                companions: companions,
+                groupMode: groupMode,
+                pdfPath: 'assets/PDF/Journey to the West.pdf',
+              );
             }
           },
         );

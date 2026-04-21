@@ -85,6 +85,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   List<String> _pdfPageTexts = [];
   bool _xyjPdfMode = true; // 西游记：默认展示 PDF 文档模式；开启"扫描成文本"后变为现有文本阅读（不改变）
   String? _activePdfAsset; // 当前加载到临时文件的 PDF asset 路径
+  bool _forceJourneyScene = false; // 强制让《西游记》进入与拍照路径一致的场景状态
   late AnimationController _glowController; // 灯泡发光动画控制器
   bool showKnowledgeCard = false; // 是否显示知识卡片
   Offset? _floatingButtonPosition; // 浮动按钮位置（null 表示未初始化）
@@ -117,9 +118,9 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
 
     // 如果是 PDF 阅读模式：提前把 asset 拷贝到临时文件（flutter_pdfview 需要 filePath）
     // - 上传论文：widget.pdfAssetPath != null
-    // - 西游记：默认 _xyjPdfMode=true 时使用 assets/PDF/Journey to the West.pdf
+    // - 西游记：当前强制使用富文本场景，不再预加载 PDF
     final initialPdfAsset = _currentPdfAssetPath();
-    if (initialPdfAsset != null) {
+    if (initialPdfAsset != null && !_isJourneyScene) {
       _preparePdf(initialPdfAsset);
     }
   }
@@ -131,6 +132,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
 
   bool get _isPaper => widget.bookId == 'paper';
   bool get _isCartoon => widget.bookId == 'cartoon';
+  bool get _isJourneyScene => widget.bookId == 'xyj';
 
   String _getTopBarTitle() {
     if (_isJaneEyre) {
@@ -180,8 +182,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   String? _currentPdfAssetPath() {
     final paper = widget.pdfAssetPath?.trim();
     if (paper != null && paper.isNotEmpty) return paper;
-    // 只有在“西游记默认阅读页”才走这个逻辑
-    if (_xyjPdfMode) return 'assets/PDF/Journey to the West.pdf';
+    // 西游记场景已强制切换为富文本阅读，不再走 PDF 预加载逻辑
     return null;
   }
 
@@ -486,8 +487,13 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
     if (_isCartoon) {
       return _buildCartoonContent();
     }
+
+    // 1）西游记场景：强制使用富文本阅读，不走 PDF / 扫描成文本分支
+    if (_isJourneyScene) {
+      return _buildTextBookPagedContent();
+    }
     
-    // 1）上传文档 A/B：包括"简·爱选段"的 PDF
+    // 2）上传文档 A/B：包括"简·爱选段"的 PDF
     if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
       // B 选项：简·爱 PDF → 开启"扫描成文本"后，直接进入支持高亮/批注的文本阅读模式
       if (_isJaneEyre && _pdfAsText) {
@@ -507,18 +513,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
       }
     }
 
-    // 2）西游记默认阅读页：
-    // - _xyjPdfMode=true：展示 xyj.pdf
-    // - _xyjPdfMode=false：保持文本阅读（支持高亮/批注）
-    final currentPdf = _currentPdfAssetPath();
-    if (currentPdf != null && _xyjPdfMode) {
-      if (_activePdfAsset != currentPdf) {
-        _preparePdf(currentPdf);
-      }
-      return _buildPdfContent();
-    }
-
-    // 3）文本模式：西游记 & 简·爱共用
+    // 3）文本模式：简·爱共用
     return _buildTextBookPagedContent();
   }
 
@@ -804,6 +799,139 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   }
 
   Widget _buildCoverPage() {
+    if (_isJourneyScene) {
+      final chapter = _activeChapters.firstWhere(
+        (c) => c.chapterNumber == 59,
+        orElse: () => _activeChapters.first,
+      );
+
+      final imageAssets = const [
+        'assets/images/xyj1.png',
+        'assets/images/xyj2.png',
+        'assets/images/xyj3.png',
+        'assets/images/xyj4.png',
+      ];
+
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Text(
+                chapter.title,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'serif',
+                  color: Color(0xFF1C1917),
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                'AI 小助手为你伴读《西游记》第五十九回',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ...imageAssets.map((asset) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: GestureDetector(
+                  onTap: () => _showImagePreview(asset),
+                  child: Hero(
+                    tag: asset,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        children: [
+                          Image.asset(
+                            asset,
+                            width: double.infinity,
+                            height: 240,
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withOpacity(0.0),
+                                    Colors.black.withOpacity(0.7),
+                                  ],
+                                ),
+                              ),
+                              child: const Text(
+                                'AI生成插画',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF2FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.auto_awesome, size: 16, color: Color(0xFF4F46E5)),
+                      SizedBox(width: 6),
+                      Text(
+                        'AI 章节概括',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    chapter.aiSummary,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.6,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     if (_isJaneEyre) {
       final chapter = _activeChapters.first;
 
