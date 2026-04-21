@@ -598,7 +598,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
             Positioned(
               // 标记位置：大约在第二段第二行的位置
               top: MediaQuery.of(context).size.height * 0.35, // 调整这个值来定位到正确位置
-              left: MediaQuery.of(context).size.width * 0.65, // 调整这个值来定位到正确位置
+              left: MediaQuery.of(context).size.width * 0.18, // 调整到页面左侧
               child: GestureDetector(
                 onTap: () {
                   setState(() {
