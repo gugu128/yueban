@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:reading/services/mock_data.dart' as mock_data;
 import 'package:reading/models/book_content.dart';
@@ -18,6 +20,7 @@ class CompanionSelectionScreen extends StatefulWidget {
 
 class _CompanionSelectionScreenState extends State<CompanionSelectionScreen> {
   final Set<String> selectedRoleIds = {};
+  final Random _random = Random();
   bool _showRecommendationHint = true;
 
   bool _isImageAvatar(String avatar) {
@@ -54,24 +57,14 @@ class _CompanionSelectionScreenState extends State<CompanionSelectionScreen> {
   }
 
   void _autoSelectRecommendedRoles() {
-    // 简单基于书目做预设推荐，可按需要调整
-    List<String> ids;
-    switch (widget.bookId) {
-      case 'jane_eyre':
-        ids = ['luxun', 'socrates_reviewer', 'ai_helper_modern'];
-        break;
-      case 'paper':
-        ids = ['ai_helper_modern', 'socrates_reviewer', 'trump'];
-        break;
-      case 'cartoon':
-        ids = ['miyazaki', 'ai_helper_modern', 'lindaiyu'];
-        break;
-      default: // 'xyj' 等
-        ids = ['wukong_reviewer', 'luxun', 'ai_helper_modern'];
-    }
+    final availableRoleIds = mock_data.allCompanionRoles.map((role) => role.id).toList();
+    if (availableRoleIds.isEmpty) return;
+
+    availableRoleIds.shuffle(_random);
     selectedRoleIds
       ..clear()
-      ..addAll(ids.where((id) => mock_data.allCompanionRoles.any((r) => r.id == id)).take(3));
+      ..addAll(availableRoleIds.take(3));
+    _showRecommendationHint = true;
   }
 
   @override
