@@ -96,6 +96,8 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   final Map<String, TextEditingController> _chatControllers = {};
   final AudioPlayer _luxunAudioPlayer = AudioPlayer();
   bool _luxunAudioPlaying = false;
+  String? _selectedLuxunThreadId;
+  bool _luxunStopRequested = false;
 
   @override
   void initState() {
@@ -2649,7 +2651,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
                   ),
                   GestureDetector(
                     onTap: isLuxunFeaturedComment
-                        ? () => _playLuxunCommentAudio()
+                        ? () => _toggleLuxunCommentAudio(threadId)
                         : null,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -2668,31 +2670,13 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
                             offset: const Offset(0, 2),
                           ),
                         ],
-                        border: isLuxunFeaturedComment
-                            ? Border.all(color: const Color(0xFF4F46E5), width: 1)
+                        border: _selectedLuxunThreadId == threadId
+                            ? Border.all(color: const Color(0xFF4F46E5), width: 1.5)
                             : null,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (isLuxunFeaturedComment) ...[
-                            const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.volume_up, size: 14, color: Color(0xFF4F46E5)),
-                                SizedBox(width: 6),
-                                Text(
-                                  '点击播放鲁迅评论',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF4F46E5),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                          ],
                           Text(
                             annotation.comment,
                             style: const TextStyle(
@@ -2872,11 +2856,25 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
     );
   }
 
-  Future<void> _playLuxunCommentAudio() async {
-    if (_luxunAudioPlaying) return;
+  Future<void> _toggleLuxunCommentAudio(String threadId) async {
+    final isCurrentSelection = _selectedLuxunThreadId == threadId;
+
+    if (isCurrentSelection) {
+      await _luxunAudioPlayer.stop();
+      if (!mounted) return;
+      setState(() {
+        _selectedLuxunThreadId = null;
+        _luxunAudioPlaying = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _selectedLuxunThreadId = threadId;
+      _luxunAudioPlaying = true;
+    });
 
     try {
-      _luxunAudioPlaying = true;
       await _luxunAudioPlayer.stop();
       await _luxunAudioPlayer.setReleaseMode(ReleaseMode.stop);
       await _luxunAudioPlayer.play(
@@ -2891,7 +2889,13 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
         );
       }
     } finally {
-      _luxunAudioPlaying = false;
+      if (!mounted) return;
+      setState(() {
+        if (_selectedLuxunThreadId == threadId) {
+          _selectedLuxunThreadId = null;
+        }
+        _luxunAudioPlaying = false;
+      });
     }
   }
 
