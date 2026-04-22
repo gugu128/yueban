@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:reading/services/mock_data.dart' as mock_data;
 import 'package:reading/models/book_content.dart';
 import 'package:reading/widgets/ai_dashboard.dart';
@@ -93,6 +94,8 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   Offset _dragStartGlobalPosition = Offset.zero; // 拖动开始的全局位置
   final Map<String, List<_ChatMessage>> _companionChats = {};
   final Map<String, TextEditingController> _chatControllers = {};
+  final AudioPlayer _luxunAudioPlayer = AudioPlayer();
+  bool _luxunAudioPlaying = false;
 
   @override
   void initState() {
@@ -271,6 +274,10 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   void dispose() {
     _glowController.dispose();
     _pageController.dispose();
+    _luxunAudioPlayer.dispose();
+    for (final controller in _chatControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -598,7 +605,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
             Positioned(
               // 标记位置：大约在第二段第二行的位置
               top: MediaQuery.of(context).size.height * 0.35, // 调整这个值来定位到正确位置
-              left: MediaQuery.of(context).size.width * 0.18, // 调整到页面左侧
+              left: MediaQuery.of(context).size.width * 0.08, // 调整到页面左侧
               child: GestureDetector(
                 onTap: () {
                   setState(() {
@@ -2602,6 +2609,9 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   Widget _buildAnnotationWithChat(Annotation annotation, Color bubbleColor) {
     final threadId = _getAnnotationThreadId(annotation);
     final messages = _companionChats[threadId] ?? _getDefaultChatMessages(annotation);
+    final isLuxunFeaturedComment = annotation.reviewerId == 'luxun' &&
+        annotation.comment.contains('五谷养生') &&
+        annotation.comment.contains('老栓');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2637,30 +2647,61 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
                       ),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: bubbleColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(6),
-                        topRight: Radius.circular(20),
-                        bottomLeft: Radius.circular(20),
-                        bottomRight: Radius.circular(20),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
+                  GestureDetector(
+                    onTap: isLuxunFeaturedComment
+                        ? () => _playLuxunCommentAudio()
+                        : null,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: bubbleColor,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(6),
+                          topRight: Radius.circular(20),
+                          bottomLeft: Radius.circular(20),
+                          bottomRight: Radius.circular(20),
                         ),
-                      ],
-                    ),
-                    child: Text(
-                      annotation.comment,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: Color(0xFF1F2937),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                        border: isLuxunFeaturedComment
+                            ? Border.all(color: const Color(0xFF4F46E5), width: 1)
+                            : null,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (isLuxunFeaturedComment) ...[
+                            const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.volume_up, size: 14, color: Color(0xFF4F46E5)),
+                                SizedBox(width: 6),
+                                Text(
+                                  '点击播放鲁迅评论',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF4F46E5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                          ],
+                          Text(
+                            annotation.comment,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              height: 1.6,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -2829,6 +2870,29 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
         ],
       ),
     );
+  }
+
+  Future<void> _playLuxunCommentAudio() async {
+    if (_luxunAudioPlaying) return;
+
+    try {
+      _luxunAudioPlaying = true;
+      await _luxunAudioPlayer.stop();
+      await _luxunAudioPlayer.setReleaseMode(ReleaseMode.stop);
+      await _luxunAudioPlayer.play(
+        AssetSource('music/luxun.m4a'),
+        volume: 1.0,
+      );
+      await _luxunAudioPlayer.onPlayerComplete.first;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('音频播放失败，请稍后重试')),
+        );
+      }
+    } finally {
+      _luxunAudioPlaying = false;
+    }
   }
 
   void _handleSendMessage({
