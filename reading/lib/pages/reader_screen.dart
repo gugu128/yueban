@@ -84,7 +84,8 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   bool _pdfAsText = false; // 是否将 PDF 转为文字阅读
   bool _pdfTextLoading = false;
   List<String> _pdfPageTexts = [];
-  bool _xyjPdfMode = true; // 西游记：默认展示 PDF 文档模式；开启"扫描成文本"后变为现有文本阅读（不改变）
+  bool _xyjPdfMode = true; // 西游记文档模式：关闭扫描时展示 PDF，开启后切到富文本
+  bool _journeyUploadAsPdf = true; // 上传《Journey to the West》时先显示原始 PDF
   String? _activePdfAsset; // 当前加载到临时文件的 PDF asset 路径
   bool _forceJourneyScene = false; // 强制让《西游记》进入与拍照路径一致的场景状态
   late AnimationController _glowController; // 灯泡发光动画控制器
@@ -122,10 +123,10 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
     });
 
     // 如果是 PDF 阅读模式：提前把 asset 拷贝到临时文件（flutter_pdfview 需要 filePath）
-    // - 上传论文：widget.pdfAssetPath != null
-    // - 西游记：当前强制使用富文本场景，不再预加载 PDF
+    // - 上传论文 / 简·爱：默认先显示 PDF
+    // - Journey to the West：上传后先显示 PDF，直到用户开启“扫描成文本”
     final initialPdfAsset = _currentPdfAssetPath();
-    if (initialPdfAsset != null && !_isJourneyScene) {
+    if (initialPdfAsset != null) {
       _preparePdf(initialPdfAsset);
     }
   }
@@ -137,7 +138,10 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
 
   bool get _isPaper => widget.bookId == 'paper';
   bool get _isCartoon => widget.bookId == 'cartoon';
-  bool get _isJourneyScene => widget.bookId == 'xyj';
+  bool get _isJourneyScene =>
+      widget.bookId == 'xyj' ||
+      (widget.pdfAssetPath != null &&
+          widget.pdfAssetPath!.contains('Journey to the West'));
 
   String _getTopBarTitle() {
     if (_isJaneEyre) {
@@ -187,7 +191,11 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
   String? _currentPdfAssetPath() {
     final paper = widget.pdfAssetPath?.trim();
     if (paper != null && paper.isNotEmpty) return paper;
-    // 西游记场景已强制切换为富文本阅读，不再走 PDF 预加载逻辑
+
+    if (_isJourneyScene && _journeyUploadAsPdf) {
+      return 'assets/PDF/xyj.pdf';
+    }
+
     return null;
   }
 
@@ -497,11 +505,20 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
       return _buildCartoonContent();
     }
 
-    // 1）西游记场景：强制使用富文本阅读，不走 PDF / 扫描成文本分支
+    // 1）西游记上传文档：默认先显示 PDF，开启“扫描成文本”后切换为富文本
     if (_isJourneyScene) {
+      if (_journeyUploadAsPdf && !_pdfAsText) {
+        final currentPdf = _currentPdfAssetPath();
+        if (currentPdf != null) {
+          if (_activePdfAsset != currentPdf) {
+            _preparePdf(currentPdf);
+          }
+          return _buildPdfContent();
+        }
+      }
       return _buildTextBookPagedContent();
     }
-    
+
     // 2）上传文档 A/B：包括"简·爱选段"的 PDF
     if (widget.pdfAssetPath != null && widget.pdfAssetPath!.trim().isNotEmpty) {
       // B 选项：简·爱 PDF → 开启"扫描成文本"后，直接进入支持高亮/批注的文本阅读模式
@@ -1255,14 +1272,12 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
 
               // 找到在完整内容列表中的索引（排除title和image_gen）
               final contentIndex = contentBlocks.indexOf(block);
-              // 找到在bookContent数组中的原始索引
-              final originalIndex = _activeBookContent.indexOf(block);
               
               // 如果是简爱且开启划词翻译模式，使用SelectableText并高亮需要翻译的词
               if (_isJaneEyre && wordTranslationMode) {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 20),
-                  child: _buildTranslatableText(block, contentIndex, originalIndex),
+                  child: _buildTranslatableText(block, contentIndex),
                 );
               }
               
@@ -1305,7 +1320,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
                             child: GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  showCommentIndex = originalIndex;
+                                  showCommentIndex = contentIndex;
                                 });
                               },
                               child: Container(
@@ -1351,7 +1366,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildTranslatableText(BookContent block, int contentIndex, int originalIndex) {
+  Widget _buildTranslatableText(BookContent block, int contentIndex) {
     final text = block.content;
     
     // 不自动高亮，只显示普通文本
@@ -2296,6 +2311,11 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
     final comment = _activeComments[showCommentIndex];
     if (comment == null) return const SizedBox.shrink();
 
+    final selectedContent = _activeBookContent.firstWhere(
+      (block) => block.refId == showCommentIndex,
+      orElse: () => BookContent(type: 'text', content: comment.content),
+    );
+
     // 过滤出马云、鲁迅、宫崎骏的评论
     final filteredAnnotations = comment.annotations.where((ann) {
       return ann.reviewerId == 'trump' || 
@@ -2392,7 +2412,7 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
                                 ),
                               ),
                               child: Text(
-                                comment.content,
+                                selectedContent.content,
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Color(0xFF78350F),
@@ -3434,9 +3454,9 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
                             ],
                           ),
                           // 扫描成文本：
-                          // - 西游记：在 PDF / 文本两种模式间切换
-                          // - 上传文档（论文 / 简·爱）：控制是否从 PDF 切到文字模式
-                          if (widget.pdfAssetPath == null) ...[
+                          // - Journey to the West：先显示 PDF，开启后切到富文本
+                          // - 其他上传文档（论文 / 简·爱）：控制是否从 PDF 切到文字模式
+                          if (widget.pdfAssetPath == null && !_isJourneyScene) ...[
                             const SizedBox(height: 18),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3468,19 +3488,39 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
                                 const SizedBox(width: 16),
                                 Switch(
                                   // 开关“开”=扫描成文本=使用现有文本阅读（不改变）
-                                  value: !_xyjPdfMode,
+                                  value: _pdfAsText,
                                   onChanged: (scanAsText) async {
                                     if (scanAsText) {
+                                      await _ensurePdfText();
+                                      if (!mounted) return;
+                                      if (_isJourneyScene) {
+                                        setState(() {
+                                          _journeyUploadAsPdf = false;
+                                        });
+                                      }
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('已切换为「文字阅读模式」，向右滑动可继续翻页。'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    } else {
                                       setState(() {
-                                        _xyjPdfMode = false; // 切到文本阅读
+                                        _pdfAsText = false;
+                                        if (_isJourneyScene) {
+                                          _journeyUploadAsPdf = true;
+                                        }
                                       });
-                                      return;
+                                      if (_isJourneyScene) {
+                                        await _preparePdf('assets/PDF/xyj.pdf');
+                                      }
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('已切回「原始 PDF 模式」。'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
                                     }
-                                    // 开关“关”=文档模式=展示 xyj.pdf
-                                    setState(() {
-                                      _xyjPdfMode = true;
-                                    });
-                                    await _preparePdf('assets/PDF/xyj.pdf');
                                   },
                                   activeColor: const Color(0xFF4F46E5),
                                 ),
