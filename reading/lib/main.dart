@@ -256,34 +256,34 @@ class _AppContainerState extends State<AppContainer> {
     final normalized = fileName.toLowerCase();
     if (normalized == 'jane eyre selected chapters.pdf') {
       return (
-        '正在分析《简爱》节选',
+        '正在分析《$fileName》',
         '系统正在识别章节、人物关系与可阅读段落...',
         const Duration(seconds: 2),
       );
     }
     if (normalized == 'journey to the west.pdf') {
       return (
-        '正在分析《西游记》文档',
+        '正在分析《$fileName》',
         '系统正在识别回目、人物与段落结构...',
         const Duration(milliseconds: 1500),
       );
     }
     if (normalized == 'paper.pdf') {
       return (
-        '正在分析论文',
+        '正在分析《$fileName》',
         '系统正在识别摘要、标题与知识点...',
         const Duration(milliseconds: 1500),
       );
     }
     if (normalized == 'cartoon.png') {
       return (
-        '正在分析漫画图片',
+        '正在分析《$fileName》',
         '系统正在识别画面元素与主题含义...',
         const Duration(milliseconds: 1500),
       );
     }
     return (
-      '正在分析文档',
+      '正在分析《$fileName》',
       '系统正在识别文档类型与内容...',
       const Duration(milliseconds: 1200),
     );
