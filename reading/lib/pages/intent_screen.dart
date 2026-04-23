@@ -29,6 +29,8 @@ class _IntentScreenState extends State<IntentScreen> {
   final TextEditingController _textController = TextEditingController();
   final List<ChatMessage> _chatMessages = [];
   bool _hasReceivedReply = false;
+  bool _isThinking = false;
+  String _typingReply = '';
 
   @override
   void dispose() {
@@ -36,9 +38,47 @@ class _IntentScreenState extends State<IntentScreen> {
     super.dispose();
   }
 
+  Future<void> _animateReply(String reply) async {
+    if (!mounted) return;
+
+    setState(() {
+      _isThinking = true;
+      _typingReply = '';
+    });
+
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+
+    setState(() {
+      _isThinking = false;
+      _chatMessages.add(ChatMessage(
+        content: '',
+        isUser: false,
+      ));
+    });
+
+    for (var i = 0; i < reply.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 35));
+      if (!mounted) return;
+      setState(() {
+        _typingReply = reply.substring(0, i + 1);
+        _chatMessages[_chatMessages.length - 1] = ChatMessage(
+          content: _typingReply,
+          isUser: false,
+        );
+      });
+    }
+
+    if (mounted) {
+      setState(() {
+        _hasReceivedReply = true;
+      });
+    }
+  }
+
   void _sendMessage() {
     final text = _textController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isThinking) return;
 
     setState(() {
       _chatMessages.add(ChatMessage(content: text, isUser: true));
@@ -57,17 +97,7 @@ class _IntentScreenState extends State<IntentScreen> {
       userIntent: text,
     );
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
-          _chatMessages.add(ChatMessage(
-            content: reply,
-            isUser: false,
-          ));
-          _hasReceivedReply = true;
-        });
-      }
-    });
+    _animateReply(reply);
   }
 
   @override
@@ -106,8 +136,52 @@ class _IntentScreenState extends State<IntentScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: ListView.builder(
-                  itemCount: _chatMessages.length,
+                  itemCount: _chatMessages.length + (_isThinking ? 1 : 0),
                   itemBuilder: (context, index) {
+                    if (_isThinking && index == _chatMessages.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6366F1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '🤖',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEEF2FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '思考中...',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[600],
+                                    height: 1.6,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
                     final message = _chatMessages[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
