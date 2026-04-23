@@ -2919,15 +2919,17 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
     }
   }
 
-  void _handleSendMessage({
+  Future<void> _handleSendMessage({
     required String threadId,
     required String reviewerName,
     required String reviewerAvatar,
-  }) {
+  }) async {
     final controller = _chatControllers[threadId];
     if (controller == null) return;
     final text = controller.text.trim();
     if (text.isEmpty) return;
+
+    final reply = _generateRoleReply(threadId, text);
 
     setState(() {
       final messages = _companionChats.putIfAbsent(
@@ -2935,14 +2937,26 @@ class _ReaderScreenState extends State<ReaderScreen> with SingleTickerProviderSt
         () => List<_ChatMessage>.from(_getDefaultChatMessagesByThread(threadId)),
       );
       messages.add(_ChatMessage.user(text, avatar: 'assets/images/yonghu.png'));
-      messages.add(
-        _ChatMessage.bot(
-          _generateRoleReply(threadId, text),
-          avatar: reviewerAvatar,
-        ),
-      );
+      messages.add(_ChatMessage.bot('', avatar: reviewerAvatar));
       controller.clear();
     });
+
+    final botIndex = _companionChats[threadId]!.length - 1;
+
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+
+    for (var i = 0; i < reply.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 35));
+      if (!mounted) return;
+      final currentText = reply.substring(0, i + 1);
+      setState(() {
+        _companionChats[threadId]![botIndex] = _ChatMessage.bot(
+          currentText,
+          avatar: reviewerAvatar,
+        );
+      });
+    }
   }
 
   String _getAnnotationThreadId(Annotation annotation) {

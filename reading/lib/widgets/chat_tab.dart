@@ -108,6 +108,36 @@ class _ChatTabState extends State<ChatTab> {
     }
   }
 
+  Future<void> _addTypedReply({required Role role, required String reply}) async {
+    if (!mounted) return;
+
+    setState(() {
+      _messages.add(ChatMessage(
+        role: role,
+        content: '',
+        isUser: false,
+      ));
+    });
+
+    final replyIndex = _messages.length - 1;
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+
+    String currentText = '';
+    for (var i = 0; i < reply.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 35));
+      if (!mounted) return;
+      currentText = reply.substring(0, i + 1);
+      setState(() {
+        _messages[replyIndex] = ChatMessage(
+          role: role,
+          content: currentText,
+          isUser: false,
+        );
+      });
+    }
+  }
+
   void _sendMessage() {
     final text = _inputController.text.trim();
     if (text.isEmpty) return;
@@ -144,19 +174,16 @@ class _ChatTabState extends State<ChatTab> {
     // 根据角色和模式生成回复
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        setState(() {
-          if (widget.isGroupMode && widget.selectedCompanions.isNotEmpty) {
-            // 群聊模式：显示群聊对话
-            _showGroupChatMessages();
-          } else {
-            // 单人模式：当前角色回复
-            _messages.add(ChatMessage(
-              role: widget.currentRole,
-              content: _getRoleResponse(widget.currentRole, text),
-              isUser: false,
-            ));
-          }
-        });
+        if (widget.isGroupMode && widget.selectedCompanions.isNotEmpty) {
+          // 群聊模式：显示群聊对话
+          _showGroupChatMessages();
+        } else {
+          // 单人模式：当前角色回复
+          _addTypedReply(
+            role: widget.currentRole,
+            reply: _getRoleResponse(widget.currentRole, text),
+          );
+        }
       }
     });
   }
@@ -465,13 +492,7 @@ class _ChatTabState extends State<ChatTab> {
       if (role != null) {
         Future.delayed(Duration(milliseconds: delay), () {
           if (mounted) {
-            setState(() {
-              _messages.add(ChatMessage(
-                role: role,
-                content: msg.content,
-                isUser: false,
-              ));
-            });
+            _addTypedReply(role: role!, reply: msg.content);
           }
         });
         delay += 500;
